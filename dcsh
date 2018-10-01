@@ -1,0 +1,29 @@
+#!/bin/bash -ie
+
+DCSH_PS1_PREFIX=${DCSH_PS1_PREFIX:-(dcsh)}
+
+function service_aliases() {
+  for service in $(docker-compose config --services); do
+    echo "alias ${service}='docker-compose run --rm ${service}'"
+  done
+}
+
+read -r -d '' rc << EOF
+__dcshell__=true;
+PS1="$DCSH_PS1_PREFIX${PS1}"
+alias dc='docker-compose'
+alias build='docker-compose build'
+alias up='docker-compose up'
+alias down='docker-compose down'
+$(service_aliases)
+docker-compose build
+EOF
+
+if [ -f .dcsh ]; then
+  rc="$rc\n$(cat .dcsh)"
+fi
+
+if [ "$__dcshell__" = "" ]; then
+  bash --init-file <(echo -e "${rc}") -i
+  docker-compose down
+fi
