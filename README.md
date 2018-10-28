@@ -1,2 +1,2 @@
-# dash
-BASH shell wrapper for docker-compose
+# dcsh
+BASH shell wrapper for docker-compose.

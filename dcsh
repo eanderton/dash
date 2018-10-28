@@ -1,29 +1,102 @@
-#!/bin/bash -ie
+#!/usr/bin/env python
 
-DCSH_PS1_PREFIX=${DCSH_PS1_PREFIX:-(dcsh)}
+from __future__ import print_function
+import os
+import subprocess
+import yaml
+import sys
+import tempfile
+import argparse
 
-function service_aliases() {
-  for service in $(docker-compose config --services); do
-    echo "alias ${service}='docker-compose run --rm ${service}'"
-  done
-}
 
-read -r -d '' rc << EOF
-__dcshell__=true;
-PS1="$DCSH_PS1_PREFIX${PS1}"
-alias dc='docker-compose'
-alias build='docker-compose build'
-alias up='docker-compose up'
-alias down='docker-compose down'
-$(service_aliases)
-docker-compose build
-EOF
+def build_init_script():
+    dcsh_path = os.path.abspath(sys.argv[0])
+    init_script = [ 
+        'alias reload="source <({} init-script)"'.format(dcsh_path),
+        'alias help="{} --help"'.format(dcsh_path),
+    ]
 
-if [ -f .dcsh ]; then
-  rc="$rc\n$(cat .dcsh)"
-fi
+    # docker-compose specific setup
+    try:
+        with open('./docker-compose.yml') as f:
+            dc_config = yaml.load(f.read())
+        init_script += [
+            'alias dc="docker-compose"',
+            'alias build="docker-compose build"',
+            'alias up="docker-compose up"',
+            'alias down="docker-compose down"',
+        ]
+        # build run aliases
+        for service in dc_config.get('services', {}).keys():
+            init_script.append('alias {0}="docker-compose run --rm {0}"'.format(service)) 
 
-if [ "$__dcshell__" = "" ]; then
-  bash --init-file <(echo -e "${rc}") -i
-  docker-compose down
-fi
+        # apply optional command aliases and environment
+        dcsh_config = dc_config.get('x-dcsh', {})
+        for alias, script in dcsh_config.get('scripts', {}).items():
+            init_script.append('alias {}="{}"'.format(alias, script))
+        env.update(dcsh_config.get('environment', {})) 
+    except:
+        pass
+
+    # pull in dcsh environment files
+    for conf_file in ['/etc/dcsh', os.environ.get('HOME','/dev/null') + '/.dcsh', '.dcsh']:
+        try:
+            with open(conf_file) as f:
+                for line in f.readlines():
+                    init_script.append(f.readlines())
+        except:
+            pass
+
+    return init_script
+
+
+def launch_subshell(args):
+    if os.environ.get('__dcsh__', None):
+        print('DCSH already started; use "reload" to refresh environment. Exiting.')
+        sys.exit(1) 
+
+    # run bashrc scripts and patch the shell prompt
+    ps1_prefix = os.environ.get('DCSH_PS1_PREFIX', '''\e[33m(dcsh)\e[0m''')
+    init_script = [
+        'if [ -f /etc/bash.bashrc ]; then source /etc/bash.bashrc; fi',
+        'if [ -f $HOME/.bashrc ]; then source $HOME/.bashrc; fi',
+        'PS1="{}$PS1"'.format(ps1_prefix),
+    ] + build_init_script()
+    
+    # run the subshell
+    with tempfile.NamedTemporaryFile() as init_file:
+        init_file.write('\n'.join(init_script))
+        init_file.flush()
+        
+        env = dict(os.environ)
+        env['__dcsh__'] = 'true'
+        shell = os.environ.get('SHELL', os.environ.get('DCSH_SHELL', '/bin/bash'))
+        sh = subprocess.Popen([shell, '--init-file', init_file.name, '-i'], env=env)
+        sh.communicate()
+        sys.exit(sh.returncode)
+
+
+def render_init_script(args):
+    print('\n'.join(build_init_script()))
+
+
+def main():
+    # set default subcommand for argparse by providing arguments
+    if len(sys.argv) == 1:
+        sys.argv.append('launch')
+    
+    # configure parser 
+    parser = argparse.ArgumentParser('Shell wrapper for docker-compose')
+    commands = parser.add_subparsers(title='subcommands')
+    launch = commands.add_parser('launch', help='launches configured subshell (default)')
+    launch.set_defaults(fn=launch_subshell)
+    init_script = commands.add_parser('init-script', help='outputs the rendered shell init script')
+    init_script.set_defaults(fn=render_init_script)
+
+    # run subcommand
+    args = parser.parse_args()
+    args.fn(args)
+
+
+if __name__ == '__main__':
+    main()
