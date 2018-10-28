@@ -8,9 +8,11 @@ x-dcsh:
   # functions are turned into BASH functions
   functions:
     do-foo: |
+      # runs a foo command
+      # all arguments are displayed through "echo" as passed
       echo "running foo"
-      echo 'foo'
-      exit 200
+      echo "$@"
+      echo "done with foo"
 
   # scripts are automatically prefixed with the `dc` command alias
   scripts:
