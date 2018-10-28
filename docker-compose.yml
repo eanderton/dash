@@ -1,0 +1,28 @@
+# example compose file for dcsh
+
+version: '3.4'
+
+x-dcsh:
+  sudo: true
+
+  # functions are turned into BASH functions
+  functions:
+    do-foo: |
+      echo "running foo"
+      echo 'foo'
+      exit 200
+
+  # scripts are automatically prefixed with the `dc` command alias
+  scripts:
+    test: 'run --rm myapp' 
+
+  # environment vars added to the subshell on launch
+  environment:
+    foo: bar
+
+
+services:
+  myapp:
+    build: .
+    volumes:
+      - .:/workspace

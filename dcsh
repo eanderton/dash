@@ -9,10 +9,11 @@ import tempfile
 import argparse
 
 
-def build_init_script():
+def build_init_script(sudo):
     dcsh_path = os.path.abspath(sys.argv[0])
+    reload_args = '--sudo' if sudo else ''
     init_script = [ 
-        'alias reload="source <({} init-script)"'.format(dcsh_path),
+        'alias reload="source <({} {} init-script)"'.format(dcsh_path, reload_args),
         'alias help="{} --help"'.format(dcsh_path),
     ]
 
@@ -20,20 +21,27 @@ def build_init_script():
     try:
         with open('./docker-compose.yml') as f:
             dc_config = yaml.load(f.read())
+        dcsh_config = dc_config.get('x-dcsh', {})
+       
+        # set stock command aliases 
+        compose_cmd = 'docker-compose'
+        if dcsh_config.get('sudo', sudo):
+            compose_cmd = 'sudo ' + compose_cmd
         init_script += [
-            'alias dc="docker-compose"',
-            'alias build="docker-compose build"',
-            'alias up="docker-compose up"',
-            'alias down="docker-compose down"',
+            'alias dc="{}"'.format(compose_cmd),
+            'alias build="dc build"',
+            'alias up="dc up"',
+            'alias down="dc down"',
         ]
         # build run aliases
         for service in dc_config.get('services', {}).keys():
-            init_script.append('alias {0}="docker-compose run --rm {0}"'.format(service)) 
+            init_script.append('alias {0}="dc run --rm {0}"'.format(service)) 
 
-        # apply optional command aliases and environment
-        dcsh_config = dc_config.get('x-dcsh', {})
-        for alias, script in dcsh_config.get('scripts', {}).items():
-            init_script.append('alias {}="{}"'.format(alias, script))
+        # apply optional command functions, scripts, and environment
+        for name, script in dcsh_config.get('scripts', {}).items():
+            init_script.append('alias {}="dc {}"'.format(name, script))
+        for name, func in dcsh_config.get('functions', {}).items():
+            init_script.append('function {} {{\n{}\n}}'.format(name, func))
         env.update(dcsh_config.get('environment', {})) 
     except:
         pass
@@ -61,7 +69,7 @@ def launch_subshell(args):
         'if [ -f /etc/bash.bashrc ]; then source /etc/bash.bashrc; fi',
         'if [ -f $HOME/.bashrc ]; then source $HOME/.bashrc; fi',
         'PS1="{}$PS1"'.format(ps1_prefix),
-    ] + build_init_script()
+    ] + build_init_script(args.sudo)
     
     # run the subshell
     with tempfile.NamedTemporaryFile() as init_file:
@@ -77,7 +85,7 @@ def launch_subshell(args):
 
 
 def render_init_script(args):
-    print('\n'.join(build_init_script()))
+    print('\n'.join(build_init_script(args.sudo)))
 
 
 def main():
@@ -87,6 +95,8 @@ def main():
     
     # configure parser 
     parser = argparse.ArgumentParser('Shell wrapper for docker-compose')
+    parser.add_argument('-s', '--sudo', action='store_true', help='run docker-compose using sudo')
+    parser.set_defaults(sudo=False)
     commands = parser.add_subparsers(title='subcommands')
     launch = commands.add_parser('launch', help='launches configured subshell (default)')
     launch.set_defaults(fn=launch_subshell)
