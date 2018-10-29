@@ -9,7 +9,17 @@ import tempfile
 import argparse
 
 
+def get_bash_fn_comments(script_lines):
+    for line in script_lines:
+        if line.startswith('#'):
+            yield line.replace('#', '', 1).strip()
+        else:
+            break
+ 
+
 def merge_settings(dst, src):
+    if 'debug' in src:
+        dst['debug'] = src['debug']
     if 'sudo' in src:
         dst['sudo'] = src['sudo']
     dst['functions'].update(src.get('functions', {}))
@@ -26,13 +36,14 @@ def load_yaml(file_path):
     return {}
 
 
-def load_settings(sudo):
+def load_settings(args):
     settings = {
-        'sudo': False,
         'functions': {},
         'scripts': {},
         'environment': {},
         'services': {},
+        'debug': False,
+        'sudo': False,
     }
 
     merge_settings(settings, load_yaml('/etc/dcsh.yml'))
@@ -44,7 +55,9 @@ def load_settings(sudo):
     settings['services'] = dc_config.get('services', {})
     merge_settings(settings, dc_config.get('x-dcsh', {}))
 
-    if sudo:
+    if args.debug:
+        settings['debug'] = True
+    if args.sudo:
         settings['sudo'] = True
 
     return settings
@@ -55,6 +68,8 @@ def build_init_script(settings):
     compose_cmd = 'docker-compose'
 
     # build stock commands
+    if settings['debug']:
+        dcsh_cmd += ' --debug'
     if settings['sudo']:
         dcsh_cmd += ' --sudo'
         compose_cmd = 'sudo ' + compose_cmd
@@ -66,6 +81,8 @@ def build_init_script(settings):
         'alias up="dc up"',
         'alias down="dc down"',
     ]
+    if settings['debug']:
+        init_script = ['set -x'] + init_script + ['set +x']
 
     # build run aliases from docker compose services
     for service in settings['services'].keys():
@@ -86,14 +103,17 @@ def launch_subshell(args):
         sys.exit(1) 
 
     # run bashrc scripts and patch the shell prompt
-    settings = load_settings(args.sudo)
-    ps1_prefix = os.environ.get('DCSH_PS1_PREFIX', '''\e[33m(dcsh)\e[0m''')
+    settings = load_settings(args)
+    if settings['debug']:
+        ps1_prefix = '''\e[91m(dcsh debug mode)\e[0m'''
+    else:
+        ps1_prefix = os.environ.get('DCSH_PS1_PREFIX', '''\e[33m(dcsh)\e[0m''')
     init_script = [
         'if [ -f /etc/bash.bashrc ]; then source /etc/bash.bashrc; fi',
         'if [ -f $HOME/.bashrc ]; then source $HOME/.bashrc; fi',
         'PS1="{}$PS1"'.format(ps1_prefix),
     ] + build_init_script(settings)
-    
+   
     # run the subshell
     with tempfile.NamedTemporaryFile() as init_file:
         init_file.write('\n'.join(init_script))
@@ -109,22 +129,22 @@ def launch_subshell(args):
 
 
 def render_init_script(args):
-    settings = load_settings(args.sudo)
-    print('\n'.join(build_init_script(settings)))
+    print('\n'.join(build_init_script(load_settings(args))))
 
 
 def render_help(args):
-    settings = load_settings(args.sudo)
+    settings = load_settings(args)
+    
+    if settings['debug']:
+        print('Debug mode enabled\n')
+    
     if settings['functions']:
         print('Functions:')
         for name, value in settings['functions'].items():
-            comment = []
-            for line in value.split('\n'):
-                if line.startswith('#'):
-                    comment.append(line.replace('#', '', 1).strip())
-                else:
-                    break
-            print('  {}: {}'.format(name, '\n    '.join(comment)))
+            comment = value.split('\n')
+            if not settings['debug']:
+                comment = get_bash_fn_comments(value)
+            print('  {}: {}'.format(name, '\n    '.join(comment))) 
     else:
         print('No functions are configured.')
 
@@ -154,7 +174,8 @@ def main():
     # configure parser 
     parser = argparse.ArgumentParser('Shell wrapper for docker-compose')
     parser.add_argument('-s', '--sudo', action='store_true', help='run docker-compose using sudo')
-    parser.set_defaults(sudo=False)
+    parser.add_argument('-d', '--debug', action='store_true', help='enable debug output')
+    parser.set_defaults(sudo=False, debug=False)
     commands = parser.add_subparsers(title='subcommands')
  
     launch = commands.add_parser('launch', help='launches configured subshell (default)')
