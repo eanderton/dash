@@ -9,12 +9,17 @@ import tempfile
 import argparse
 
 
-def get_bash_fn_comments(script_lines):
+def get_bash_fn_comments(script):
+    script_lines = script.split('\n')
+    comment = []
     for line in script_lines:
         if line.startswith('#'):
-            yield line.replace('#', '', 1).strip()
+            comment.append(line.replace('#', '', 1).strip())
         else:
             break
+    if len(comment) == 0:
+        comment = script_lines[:1]
+    return comment
  
 
 def merge_settings(dst, src):
@@ -22,7 +27,6 @@ def merge_settings(dst, src):
         dst['debug'] = src['debug']
     if 'sudo' in src:
         dst['sudo'] = src['sudo']
-    dst['functions'].update(src.get('functions', {}))
     dst['scripts'].update(src.get('scripts', {}))
     dst['environment'].update(src.get('environment', {}))
 
@@ -38,7 +42,6 @@ def load_yaml(file_path):
 
 def load_settings(args):
     settings = {
-        'functions': {},
         'scripts': {},
         'environment': {},
         'services': {},
@@ -84,14 +87,10 @@ def build_init_script(settings):
     if settings['debug']:
         init_script = ['set -x'] + init_script + ['set +x']
 
-    # build run aliases from docker compose services
+    # build run aliases from docker compose services, and add custom scripts
     for service in settings['services'].keys():
         init_script.append('alias {0}="dc run --rm {0}"'.format(service)) 
-
-    # apply optional command functions, scripts, and environment
-    for name, script in settings['scripts'].items():
-        init_script.append('alias {}="dc {}"'.format(name, script))
-    for name, func in settings['functions'].items():
+    for name, func in settings['scripts'].items():
         init_script.append('function {} {{\n{}\n}}'.format(name, func))
     
     return init_script
@@ -134,24 +133,18 @@ def render_init_script(args):
 
 def render_help(args):
     settings = load_settings(args)
-    
+    print(settings) 
     if settings['debug']:
         print('Debug mode enabled\n')
     
-    if settings['functions']:
-        print('Functions:')
-        for name, value in settings['functions'].items():
-            comment = value.split('\n')
-            if not settings['debug']:
+    if settings['scripts']:
+        print('Scripts:')
+        for name, value in settings['scripts'].items():
+            if settings['debug']:
+                comment = value.split('\n')
+            else:
                 comment = get_bash_fn_comments(value)
             print('  {}: {}'.format(name, '\n    '.join(comment))) 
-    else:
-        print('No functions are configured.')
-
-    if settings['scripts']:
-        print('\nScripts:')
-        for name, value in settings['scripts'].items():
-            print('  {}: {}'.format(name, value))
     else:
         print('No scripts are configured.')
 

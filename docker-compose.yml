@@ -5,18 +5,15 @@ version: '3.4'
 x-dcsh:
   sudo: true
 
-  # functions are turned into BASH functions
-  functions:
+  # scripts are turned into BASH functions
+  scripts:
     do-foo: |
-      # runs a foo command
-      # all arguments are displayed through "echo" as passed
+      # Runs a foo command
+      # All arguments are displayed through "echo" as passed
       echo "running foo"
       echo "$@"
       echo "done with foo"
-
-  # scripts are automatically prefixed with the `dc` command alias
-  scripts:
-    test: 'run --rm myapp' 
+    test: 'dc run --rm myapp' 
 
   # environment vars added to the subshell on launch
   environment:
