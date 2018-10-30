@@ -1,2 +1,3 @@
 # dcsh
-BASH shell wrapper for docker-compose.
+Configurable subshell for Docker Compose.
+
