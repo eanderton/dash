@@ -1,7 +1,6 @@
 """Help subcommand module."""
 
-from .config import load_settings
-
+from .config import get_rc_script
 
 def get_script_comments(script):
     """Parses out comments from a script block.
@@ -24,10 +23,9 @@ def get_script_comments(script):
     return comment
 
 
-def do_help(printer, args):
+def do_show_help(printer, settings):
     """Renders user-friendly help describing the current configuration."""
 
-    settings = load_settings(args)
     printer.writeln('title', 'DCSH Configuration')
     printer.newline()
     printer.writeln('heading', 'Flags')
@@ -65,5 +63,10 @@ def do_help(printer, args):
             printer.writeln('text', value)
     else:
         printer.writeln(None, 'No environment are configured.')
+
+
+def do_show_script(printer, settings):
+    """Renders the init script without ANSI formatting."""
+    printer.writeln(None, '\n'.join(get_rc_script(settings)))
 
 

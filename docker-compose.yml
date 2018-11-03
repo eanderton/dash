@@ -5,6 +5,15 @@ version: '3.4'
 x-dcsh:
   sudo: true
 
+  # jobs are specifically for running services once with 'dc run --rm'
+  jobs:
+    test:
+      - serivce: myapp
+      - args: [hello, dcsh, world]
+    python:
+      - service: python
+      - interactive: true
+
   # scripts are turned into BASH functions
   scripts:
     do-foo: |
@@ -13,7 +22,6 @@ x-dcsh:
       echo "running foo"
       echo "$@"
       echo "done with foo"
-    test: 'dc run --rm myapp' 
 
   # environment vars added to the subshell on launch
   environment:
@@ -25,3 +33,8 @@ services:
     build: .
     volumes:
       - .:/workspace
+  python:
+    image: python:latest
+    volumes:
+      - .:/workspace
+    entrypoint: /workspace

@@ -28,6 +28,12 @@ class StylePrinter(object):
         """
         self.stylesheet[name] = kwargs
 
+    def block(self, style=None, indent=None, justify=None):
+        pass
+
+    def endblock(self):
+        pass
+
     def write(self, style, text, *args, **kwargs):
         """Writes formatted text to the configured stream, in a specified style.
 

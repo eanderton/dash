@@ -3,20 +3,30 @@
 import os
 import sys
 import yaml
+import merge
+import functools
 from colors import color as ansicolor
 
 
-def merge_settings(dst, src):
-    """Merges fields from src to dst, with consideration to the field type."""
+default_settings = {
+    'jobs': {},
+    'scripts': {},
+    'environment': {},
+    'services': {},
+    'debug': False,
+    'sudo': False,
+    'prompt': None,
+}
 
-    # override fields if present in src
-    for k in ['debug', 'sudo', 'prompt']:
-        if k in src:
-            dst[k] = src[k]
-
-    # shallow merge for dict fields
-    for k in ['scripts', 'environment']:
-        dst[k].update(src.get(k, {}))
+merge_settings = functools.partial(merge.merge, {
+    'jobs': merge.shallow,
+    'scripts': merge.shallow,
+    'environment': merge.shallow,
+    'services': merge.shallow,
+    'debug': merge.override,
+    'sudo': merge.override,
+    'prompt': merge.override,
+})
 
 
 def load_yaml(file_path):
@@ -31,15 +41,9 @@ def load_yaml(file_path):
 
 
 def load_settings(args):
-    settings = {
-        'scripts': {},
-        'environment': {},
-        'services': {},
-        'debug': False,
-        'sudo': False,
-        'prompt': None,
-    }
+    """Loads settings, merging all available configration sources."""
 
+    settings = dict(default_settings)
     merge_settings(settings, load_yaml('/etc/dcsh.yml'))
     if 'HOME' in os.environ:
         merge_settings(settings, load_yaml(os.environ['HOME'] + '/.dcsh.yml'))
@@ -83,7 +87,7 @@ def get_rc_script(settings):
         'if [ -f /etc/bash.bashrc ]; then source /etc/bash.bashrc; fi',
         'if [ -f $HOME/.bashrc ]; then source $HOME/.bashrc; fi',
         'PS1="{}"'.format(settings['prompt']),
-        'alias help="{} help"'.format(dcsh_cmd),
+        'alias help="{} show help"'.format(dcsh_cmd),
         'alias dc="{}"'.format(compose_cmd),
         'alias build="dc build"',
         'alias up="dc up"',

@@ -1,49 +1,12 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
-import os
-import subprocess
-import yaml
 import sys
-import tempfile
 import argparse
 from .printer import StylePrinter
 from .config import load_settings
-from .config import load_settings, get_rc_script
-from .help_command import do_help
-
-
-def do_subshell(printer, args):
-    """Launches a subshell, according to the current configuration.
-
-    A subshell is started with a custom prefix, and is configured with functions
-    as provided by the configuration.  
-
-    Duplicate nested subshells are explicitly disallowed.
-    """
-    
-    if os.environ.get('__dcsh__', None):
-        printer.writeln('error', 'DCSH already started; use "reload" to refresh environment. Exiting.')
-        sys.exit(1) 
-
-    # run the subshell
-    settings = load_settings(args)
-    with tempfile.NamedTemporaryFile() as init_file:
-        init_file.write('\n'.join(get_rc_script(settings)))
-        init_file.flush()
-        env = dict(os.environ)
-        env.update(settings['environment'])
-        env['__dcsh__'] = 'true'
-        shell = os.environ.get('SHELL', os.environ.get('DCSH_SHELL', '/bin/bash'))
-        sh = subprocess.Popen([shell, '--init-file', init_file.name, '-i'], env=env)
-        sh.communicate()
-        sys.exit(sh.returncode)
-
-
-def do_show_script(printer, args):
-    """Renders the init script without ANSI formatting."""
-    printer.writeln(None, '\n'.join(get_rc_script(load_settings(args))))
-
+from .show import do_show_help
+from .show import do_show_script
+from .subshell import do_subshell
 
 def main():
     """Entry point for CLI.
@@ -66,11 +29,18 @@ def main():
     launch = commands.add_parser('launch', help='launches configured subshell (default)')
     launch.set_defaults(fn=do_subshell)
  
-    init_script = commands.add_parser('show-script', help='outputs the rendered shell init script')
-    init_script.set_defaults(fn=do_show_script)
+    show = commands.add_parser('show', help='outputs details about dcsh config')
+    show_subcommands = show.add_subparsers(title='type')
 
-    show_help = commands.add_parser('help', help='shows information about configuration')
-    show_help.set_defaults(fn=do_help)
+    show_script = show_subcommands.add_parser('script', help='shows the init script')
+    show_script.set_defaults(fn=do_show_script)
+
+    show_help = show_subcommands.add_parser('help', help='shows information about configuration')
+    show_help.set_defaults(fn=do_show_help)
+    
+    show_help_cmd = commands.add_parser('help', 
+            help='alias for "show help"; shows information about configuration')
+    show_help_cmd.set_defaults(fn=do_show_help)
 
     args = parser.parse_args()
     
@@ -84,7 +54,8 @@ def main():
         printer.style('on', fg='green')
         printer.style('off', fg='red')
         printer.style('error', fg='red')
-    args.fn(printer, args)
+    settings = load_settings(args)
+    sys.exit(args.fn(printer, settings))
 
 
 if __name__ == '__main__':
