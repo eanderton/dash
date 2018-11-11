@@ -7,6 +7,8 @@ import functools
 import merge
 import argbuilder
 import shlex
+import subprocess
+import re
 from colors import color as ansicolor
 
 
@@ -17,6 +19,7 @@ default_settings = {
     'debug': False,
     'sudo': False,
     'prompt': None,
+    'intro': 'DCSH started. Type "help" for assitance.'
 }
 
 merge_settings = functools.partial(merge.with_strategy, {
@@ -27,31 +30,35 @@ merge_settings = functools.partial(merge.with_strategy, {
     'debug': merge.override,
     'sudo': merge.override,
     'prompt': merge.override,
+    'intro': merge.override,
 })
 
 run_defaults = {
     'detach': False,
-    'help': None,
-    'service': None,
+    'name': None,
+    'user': None,
     'remove': True,
     'nodeps': False,
-    'disable-tty': False,
     'service-ports': False,
+    'disable-tty': False,
     'labels': {},
-    'environment': {},
+    'publish': [],
     'volumes': [],
+    'environment': {},
+    'help': None,
+    'service': None,
     'args': [],
 }
 
 exec_defaults = {
     'detach': False,
-    'help': None,
-    'service': None,
     'privileged': None,
     'user': None,
     'disable-tty': None,
     'index': None,
     'environment': {},
+    'help': None,
+    'service': None,
     'args': [],
 }
 
@@ -60,11 +67,12 @@ task_arg_map = {
     'name': argbuilder.single('--name'),
     'nodeps': argbuilder.boolean('--no-deps'),
     'remove': argbuilder.boolean('--rm'),
-    'disable-tty': argbuilder.boolean('--disable-tty'),
+    'disable-tty': argbuilder.boolean('-T'),
     'entrypoint': argbuilder.single('--entrypoint'),
     'privileged': argbuilder.boolean('--privileged'),
     'user': argbuilder.single('--user'),
     'index': argbuilder.single('--index'),
+    'service-ports': argbuilder.boolean('--service-ports'),
     'labels': argbuilder.multi('--label','{k}={v}'),
     'volume': argbuilder.multi('--volume','{v}'),
     'publish': argbuilder.multi('--publish','{v}'),
@@ -115,9 +123,6 @@ def load_settings(args):
                 argbuilder.build(task_arg_map, taskdef) + \
                 [taskdef['service']] + \
                 taskdef['args']
-        print '\n'
-        print value
-        print taskdef['compiled_args']
         settings['tasks'][name] = taskdef
 
     # default prompt depends on debug and no_color settings
@@ -136,3 +141,24 @@ def validate_settings(settings):
     pass
 
 
+cmd_expr = re.compile(r'\s*(\w+)\s*(.+)$')
+
+
+def get_docker_compose_commands():
+    """Scrapes docker-compose help output to get command names and help text."""
+
+    commands = {}
+    sh = subprocess.Popen('docker-compose', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    _, text = sh.communicate()
+    
+    lines = text.splitlines()
+    for ii in range(len(lines)):
+        if lines[ii] == 'Commands:':
+            break
+    for jj in range(ii + 1, len(lines)):
+        result = cmd_expr.match(lines[jj])
+        if result:
+            commands[result.group(1)] = result.group(2)
+    if 'help' in commands:
+        del commands['help']  # 'help' is already provided elsewhere
+    return commands

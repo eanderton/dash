@@ -4,6 +4,8 @@ import cmd
 import functools
 import shlex
 import subprocess
+from .config import get_docker_compose_commands
+from .show import do_help
 from .show import do_show
 
 
@@ -17,14 +19,19 @@ class DcShell(cmd.Cmd):
         self.printer = printer
         self.settings = settings
         self.prompt = settings['prompt'] + ' '
-        self.intro = 'DCSH started.  Type "help" for assistance.'
+        self.intro = settings['intro']
+        
+        for name, help_text in get_docker_compose_commands().items():
+            fn = functools.partial(self._run_command, name)
+            setattr(self, 'do_' + name, fn)
+            setattr(fn, '__doc__', help_text)
+        
         for name, task in settings['tasks'].items():
             fn = functools.partial(self._run_task, task)
             setattr(self, 'do_' + name, fn)
             if task['help']:
                 setattr(fn, '__doc__', task['help'])
-
-        # TODO: patch in all other docker-compose commands
+        
         cmd.Cmd.__init__(self)
 
     def _run_compose(self, *args):
@@ -36,7 +43,11 @@ class DcShell(cmd.Cmd):
             self.printer.writeln('debug', 'Running: {}', cmd)
         sh = subprocess.Popen(cmd)
         sh.communicate()
-    
+   
+    def _run_command(self, name, cmdargs):
+        """Runs a specified docker-compose command with optional args."""
+        self._run_compose(name, *shlex.split(cmdargs))
+
     def _run_task(self, task, cmdargs):
         """Runs a specified task definition with optional args."""
         self._run_compose(*(task['compiled_args'] + shlex.split(cmdargs)))
@@ -53,10 +64,17 @@ class DcShell(cmd.Cmd):
         """Ends the shell session."""
         raise ShellExit() 
 
-    # TODO: move to help?
+    def do_dc(self, cmdargs):
+        """Passthrough to docker-compose."""
+        self._run_compose(*shlex.split(cmdargs))
+
     def do_show(self, cmdargs):
         """Shows current configuration."""
         do_show(self.printer, self.settings)
+
+    def do_help(self, cmdargs):
+        """Shows help text."""
+        do_help(self.printer, self.settings)
 
     def do_build(self, cmdargs):
         """Builds all services or specified services."""
@@ -64,7 +82,7 @@ class DcShell(cmd.Cmd):
 
     def cmdloop(self, intro=None):
         """Cmd override that handles CTRL+C gracefully."""
-        self.printer.writeln('text', intro or self.intro)
+        self.printer.writeln('intro', intro or self.intro)
         while True:
             try:
                 cmd.Cmd.cmdloop(self, intro='')  # start loop but suppress intro

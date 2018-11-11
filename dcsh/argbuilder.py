@@ -15,7 +15,9 @@ def single(*fmt):
     """Passes the data value through, following literal values."""
 
     def fn(value):
-        return [f.format(v=value) for f in fmt]
+        if value:
+            return [f.format(v=value) for f in fmt]
+        return []
     return fn
 
 
@@ -25,8 +27,9 @@ def multi(*fmt):
     def fn(value):
         if isinstance(value, dict):
             return [f.format(v=v,k=v) for f in fmt for k, v in value.items()]
-        else:    
+        elif value:    
             return [f.format(k=v) for f in fmt for v in value]
+        return []
     return fn
 
 

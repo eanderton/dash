@@ -1,5 +1,6 @@
 """Help subcommand module."""
 
+from .config import get_docker_compose_commands
 
 def get_script_comments(script):
     """Parses out comments from a script block.
@@ -40,7 +41,19 @@ def do_show(printer, settings):
         printer.writeln('on', 'Enabled - Calls to `dc` will use `sudo`.')
     else:
         printer.writeln('off', 'Disabled')
-   
+
+    if settings['environment']:
+        printer.newline()
+        printer.writeln('heading', 'Environment')
+        for name, value in settings['environment'].items():
+            printer.write('subheading', '  {}: ', name)
+            printer.writeln('text', value)
+    else:
+        printer.writeln(None, 'No environment are configured.')
+
+
+def do_help(printer, settings):
+    """Renders user-friendly help describing commands and user-defined tasks."""
     if settings['tasks']:
         printer.newline()
         printer.writeln('heading', 'Tasks')
@@ -53,11 +66,8 @@ def do_show(printer, settings):
     else:
         printer.writeln(None, 'No tasks are configured.')
 
-    if settings['environment']:
-        printer.newline()
-        printer.writeln('heading', 'Environment')
-        for name, value in settings['environment'].items():
-            printer.write('subheading', '  {}: ', name)
-            printer.writeln('text', value)
-    else:
-        printer.writeln(None, 'No environment are configured.')
+    printer.newline()
+    printer.writeln('heading', 'Docker Commands')
+    for name, helptext in get_docker_compose_commands().items():
+        printer.write('subheading', '  {}', name)
+        printer.writeln('text', ': {}', helptext)

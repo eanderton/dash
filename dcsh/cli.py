@@ -84,6 +84,7 @@ def main():
     printer = StylePrinter()
     if not args.no_color:
         printer.style('text')
+        printer.style('intro', fg='green')
         printer.style('title', fg='white', style='bold+underline')
         printer.style('heading', fg='white', style='bold')
         printer.style('subheading', fg='yellow')
