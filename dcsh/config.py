@@ -12,6 +12,18 @@ import re
 from colors import color as ansicolor
 
 
+default_stylesheet = {
+    'text': {},
+    'intro': {'fg':'green'},
+    'title': {'fg':'white', 'style':'bold+underline'},
+    'heading': {'fg':'white', 'style':'bold'},
+    'subheading': {'fg':'yellow'},
+    'on': {'fg':'green'},
+    'off': {'fg':'red'},
+    'error': {'fg':'red'},
+    'debug': {'fg':'blue', 'style':'italic'},
+}
+
 default_settings = {
     'tasks': {},
     'scripts': {},

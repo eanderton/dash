@@ -2,72 +2,60 @@
 
 from .config import get_docker_compose_commands
 
-def get_script_comments(script):
-    """Parses out comments from a script block.
-
-    Returns the first set of '#' prefixed lines from `script`, if available.
-
-    If no such comments are at the start of `script`, the first line is
-    returned instead.
-    """
-
-    script_lines = script.split('\n')
-    comment = []
-    for line in script_lines:
-        if line.startswith('#'):
-            comment.append(line.replace('#', '', 1).strip())
-        else:
-            break
-    if len(comment) == 0:
-        comment = script_lines[:1]
-    return comment
-
 
 def do_show(printer, settings):
     """Renders user-friendly help describing the current configuration."""
 
-    printer.writeln('title', 'DCSH Configuration')
-    printer.newline()
-    printer.writeln('heading', 'Flags')
+    printer.nl().title('DCSH Configuration').nl()
+    printer.heading('Flags').nl()
 
-    printer.write('subheading', '  Debug mode: ')
+    printer.subheading('  Debug mode: ')
     if settings['debug']:
-        printer.writeln('on', 'Enabled')
+        printer.on('Enabled').nl()
     else:
-        printer.writeln('off', 'Disabled')
+        printer.off('Disabled').nl()
 
-    printer.write('subheading', '  Sudo mode: ')
+    printer.subheading('  Sudo mode: ')
     if settings['sudo']:
-        printer.writeln('on', 'Enabled - Calls to `dc` will use `sudo`.')
+        printer.on('Enabled - Calls to `dc` will use `sudo`.').nl()
     else:
-        printer.writeln('off', 'Disabled')
+        printer.off('Disabled').nl()
 
     if settings['environment']:
-        printer.newline()
-        printer.writeln('heading', 'Environment')
+        printer.nl()
+        printer.heading('Task environment').nl()
         for name, value in settings['environment'].items():
-            printer.write('subheading', '  {}: ', name)
-            printer.writeln('text', value)
+            printer.subheading('  {}: ', name)
+            printer.text(value).nl()
     else:
-        printer.writeln(None, 'No environment are configured.')
+        printer.text('No task environment vars are configured.').nl()
+    printer.nl()
 
 
 def do_help(printer, settings):
     """Renders user-friendly help describing commands and user-defined tasks."""
-    if settings['tasks']:
-        printer.newline()
-        printer.writeln('heading', 'Tasks')
-        for name, value in settings['tasks'].items():
-            printer.write('subheading', '  {}', name)
-            if value['help']:
-                printer.writeln('text', ': {}', value['help'])
-            else:
-                printer.newline()
-    else:
-        printer.writeln(None, 'No tasks are configured.')
 
-    printer.newline()
-    printer.writeln('heading', 'Docker Commands')
+    printer.nl().title('DCSH Shell Commands').nl()
+   
+    printer.nl().heading('Basic DCSH commands').nl()
+    printer.subheading('  help: ').text('This help screen').nl()
+    printer.subheading('  show: ').text('Displays DCSH configuration details').nl()
+    printer.subheading('  exit: ').text('Exits the shell').nl()
+    printer.subheading('  dc: ').text('Runs docker-compose').nl()
+
+    if settings['tasks']:
+        printer.nl().heading('User defined tasks').nl()
+        for name, value in settings['tasks'].items():
+            printer.subheading('  {}', name)
+            if value['help']:
+                printer.text(': {}', value['help']).nl()
+            else:
+                printer.nl()
+    else:
+        printer.text('No tasks are configured.').nl()
+    printer.nl()
+    
+    printer.heading('Docker-compose commands')
     for name, helptext in get_docker_compose_commands().items():
-        printer.write('subheading', '  {}', name)
-        printer.writeln('text', ': {}', helptext)
+        printer.subheading('  {}', name).text(': {}', helptext).nl()
+    printer.nl()

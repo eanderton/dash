@@ -19,8 +19,7 @@ x-dcsh:
   tasks:
     bash:
       help: 'Runs a command in a BASH shell.'
-      service: myapp
-      args: /bin/bash
+      service: bash
     python:
       help: 'Runs the python interpreter.'
       service: python-dev
@@ -59,6 +58,7 @@ services:
     image: ubuntu
     volumes:
       - .:/workspace
+    entrypoint: /bin/bash
     working_dir: /workspace
 
 

@@ -3,6 +3,7 @@
 import sys
 import argparse
 from .printer import StylePrinter
+from .config import default_stylesheet
 from .config import load_settings
 from .config import validate_settings
 from .show import do_show
@@ -81,17 +82,10 @@ def main():
     args = parser.parse_args()
     
     # configure printer and run command
-    printer = StylePrinter()
     if not args.no_color:
-        printer.style('text')
-        printer.style('intro', fg='green')
-        printer.style('title', fg='white', style='bold+underline')
-        printer.style('heading', fg='white', style='bold')
-        printer.style('subheading', fg='yellow')
-        printer.style('on', fg='green')
-        printer.style('off', fg='red')
-        printer.style('error', fg='red')
-        printer.style('debug', fg='blue', style='italic')
+        printer = StylePrinter(stylesheet=default_stylesheet)
+    else:
+        printer = StylePrinter()
     
     # parse arguments, load+validate settings, and run command
     try:

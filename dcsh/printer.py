@@ -15,6 +15,13 @@ class StylePrinter(object):
         a dict of style settings.  These settings are forwarded to the
         ansicolor `color` function as kwargs.  Please see the ansicolor
         module for more information.
+
+        All methods return self, such that chained calls are possible.
+
+        This class provides a __getattr__ override that behaves like a proxy for 
+        write(stylename, ...).  This has a side-effect of allowing almost anything as
+        a valid method name. As a result, invalid styles will still proxy to write()
+        with no styling applied.
         """
         self.stream = stream if stream else sys.stdout
         self.stylesheet = dict(stylesheet) if stylesheet else {}
@@ -27,6 +34,7 @@ class StylePrinter(object):
         information.
         """
         self.stylesheet[name] = kwargs
+        return self
 
     def block(self, style=None, indent=None, justify=None):
         pass
@@ -44,12 +52,26 @@ class StylePrinter(object):
         """
         formatted_text = text.format(*args, **kwargs) if args or kwargs else text
         self.stream.write(color(formatted_text, **self.stylesheet.get(style,{})))
-    
+        return self
+
     def writeln(self, style, text, *args, **kwargs):
         """Identical to write(), except a newline is written afterwards."""
         self.write(style, text, *args, **kwargs)
         self.newline()
+        return self
 
     def newline(self):
         """Writes a newline to the configured stream."""
         self.stream.write('\n')
+        return self
+
+    def nl(self):
+        """Writes a newline to the configured stream."""
+        self.stream.write('\n')
+        return self
+
+    def __getattr__(self, name):
+        """Returns write wrapper for the style indicated by the attribute name."""
+        def fn(*args, **kwargs):
+            return self.write(name, *args, **kwargs)
+        return fn
