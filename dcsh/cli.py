@@ -4,9 +4,9 @@ import sys
 import argparse
 from .printer import StylePrinter
 from .config import load_settings
-from .show import do_show_help
-from .show import do_show_script
-from .subshell import do_subshell
+from .config import validate_settings
+from .show import do_show
+from .shell import do_shell
 
 
 # https://stackoverflow.com/questions/6365601/default-sub-command-or-handling-no-sub-command-with-argparse
@@ -72,25 +72,13 @@ def main():
     commands = parser.add_subparsers(title='subcommands')
  
     launch = commands.add_parser('launch', help='launches configured subshell (default)')
-    launch.set_defaults(fn=do_subshell)
+    launch.set_defaults(fn=do_shell)
  
     show = commands.add_parser('show', help='outputs details about dcsh config')
-    show_subcommands = show.add_subparsers(title='type')
-
-    show_script = show_subcommands.add_parser('script', help='shows the init script')
-    show_script.set_defaults(fn=do_show_script)
-
-    show_help = show_subcommands.add_parser('help', help='shows information about configuration')
-    show_help.set_defaults(fn=do_show_help)
-    
-    show_help_cmd = commands.add_parser('help', 
-            help='alias for "show help"; shows information about configuration')
-    show_help_cmd.set_defaults(fn=do_show_help)
+    show.set_defaults(fn=do_show)
 
     parser.set_default_subparser('launch')
-
     args = parser.parse_args()
-    settings = load_settings(args)
     
     # configure printer and run command
     printer = StylePrinter()
@@ -102,7 +90,18 @@ def main():
         printer.style('on', fg='green')
         printer.style('off', fg='red')
         printer.style('error', fg='red')
-    sys.exit(args.fn(printer, settings))
+        printer.style('debug', fg='blue', style='italic')
+    
+    # parse arguments, load+validate settings, and run command
+    try:
+        settings = load_settings(args)
+        validate_settings(settings)
+        sys.exit(args.fn(printer, settings))
+    except Exception as e:
+        if args.debug:
+            raise
+        printer.writeln('Error: {}', str(e))
+        sys.exit(1)
 
 
 if __name__ == '__main__':

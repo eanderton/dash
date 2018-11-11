@@ -1,6 +1,5 @@
 """Help subcommand module."""
 
-from .config import get_rc_script
 
 def get_script_comments(script):
     """Parses out comments from a script block.
@@ -23,7 +22,7 @@ def get_script_comments(script):
     return comment
 
 
-def do_show_help(printer, settings):
+def do_show(printer, settings):
     """Renders user-friendly help describing the current configuration."""
 
     printer.writeln('title', 'DCSH Configuration')
@@ -41,19 +40,18 @@ def do_show_help(printer, settings):
         printer.writeln('on', 'Enabled - Calls to `dc` will use `sudo`.')
     else:
         printer.writeln('off', 'Disabled')
-    
-    if settings['scripts']:
+   
+    if settings['tasks']:
         printer.newline()
-        printer.writeln('heading', 'Scripts')
-        for name, value in settings['scripts'].items():
-            if settings['debug']:
-                comment = value.split('\n')
+        printer.writeln('heading', 'Tasks')
+        for name, value in settings['tasks'].items():
+            printer.write('subheading', '  {}', name)
+            if value['help']:
+                printer.writeln('text', ': {}', value['help'])
             else:
-                comment = get_script_comments(value)
-            printer.write('subheading', '  {}: ', name)
-            printer.writeln('text', '\n    '.join(comment))
+                printer.newline()
     else:
-        printer.writeln(None, 'No scripts are configured.')
+        printer.writeln(None, 'No tasks are configured.')
 
     if settings['environment']:
         printer.newline()
@@ -63,10 +61,3 @@ def do_show_help(printer, settings):
             printer.writeln('text', value)
     else:
         printer.writeln(None, 'No environment are configured.')
-
-
-def do_show_script(printer, settings):
-    """Renders the init script without ANSI formatting."""
-    printer.writeln(None, '\n'.join(get_rc_script(settings)))
-
-

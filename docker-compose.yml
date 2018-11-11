@@ -2,26 +2,38 @@
 
 version: '3.4'
 
+# Environment settings for use behind a corporate proxy and/or using mirror
+# services like Nexus or self-hosted Pypi.
+x-walled-garden-args: &walled-garden-args
+  http_proxy:
+  https_proxy:
+  no_proxy:
+  PIP_INDEX_URL:
+  PIP_TRUSTED_HOST:
+ 
+# DCSH configuration.
 x-dcsh:
   sudo: true
 
-  # jobs are specifically for running services once with 'dc run --rm'
-  jobs:
-    test:
-      - serivce: myapp
-      - args: [hello, dcsh, world]
+  # shell commands that leverage services
+  tasks:
+    bash:
+      help: 'Runs a command in a BASH shell.'
+      service: myapp
+      args: /bin/bash
     python:
-      - service: python
-      - interactive: true
-
-  # scripts are turned into BASH functions
-  scripts:
-    do-foo: |
-      # Runs a foo command
-      # All arguments are displayed through "echo" as passed
-      echo "running foo"
-      echo "$@"
-      echo "done with foo"
+      help: 'Runs the python interpreter.'
+      service: python-dev
+      args: python
+    lint:
+      help: 'Lints the project.'
+      service: python-dev
+      args: flake8
+    ps:
+      exec: true
+      help: 'Runs ps on the webserver service.'
+      service: webserver
+      args: ps aux
 
   # environment vars added to the subshell on launch
   environment:
@@ -29,12 +41,24 @@ x-dcsh:
 
 
 services:
-  myapp:
-    build: .
+  webserver:
+    image: nginx
+    volumes:
+      - .:/usr/share/nginx/html:ro
+  
+  python-dev:
+    build:
+      context: .
+      args:
+        <<: *walled-garden-args
     volumes:
       - .:/workspace
-  python:
-    image: python:latest
+    working_dir: /workspace
+
+  bash:
+    image: ubuntu
     volumes:
       - .:/workspace
-    entrypoint: /workspace
+    working_dir: /workspace
+
+
