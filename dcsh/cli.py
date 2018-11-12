@@ -3,9 +3,9 @@
 import sys
 import argparse
 from .printer import StylePrinter
-from .config import default_stylesheet
 from .config import load_settings
-from .config import validate_settings
+from .settings import settings
+from .settings import printer
 from .show import do_show
 from .shell import do_shell
 
@@ -81,21 +81,14 @@ def main():
     parser.set_default_subparser('launch')
     args = parser.parse_args()
     
-    # configure printer and run command
-    if not args.no_color:
-        printer = StylePrinter(stylesheet=default_stylesheet)
-    else:
-        printer = StylePrinter()
-    
     # parse arguments, load+validate settings, and run command
     try:
-        settings = load_settings(args)
-        validate_settings(settings)
-        sys.exit(args.fn(printer, settings))
+        load_settings(args.sudo, args.debug, args.no_color)
+        sys.exit(args.fn())
     except Exception as e:
         if args.debug:
             raise
-        printer.writeln('Error: {}', str(e))
+        printer.error('Error: {}', str(e)).nl()
         sys.exit(1)
 
 

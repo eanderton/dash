@@ -1,7 +1,10 @@
 """Help subcommand module."""
 
+from .settings import settings
+from .settings import printer
 
-def do_show(printer, settings):
+
+def do_show():
     """Renders user-friendly help describing the current configuration."""
 
     printer.nl().title('DCSH Configuration').nl()
@@ -31,7 +34,7 @@ def do_show(printer, settings):
     printer.nl()
 
 
-def do_help(printer, settings):
+def do_help():
     """Renders user-friendly help describing commands and user-defined tasks."""
 
     printer.nl().title('DCSH Shell Commands').nl()

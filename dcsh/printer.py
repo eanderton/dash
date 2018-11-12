@@ -23,8 +23,14 @@ class StylePrinter(object):
         a valid method name. As a result, invalid styles will still proxy to write()
         with no styling applied.
         """
+
         self.stream = stream if stream else sys.stdout
+        self.set_stylesheet(stylesheet)
+
+    def set_stylesheet(self, stylesheet=None):
+        """Sets the printer's stylesheet."""
         self.stylesheet = dict(stylesheet) if stylesheet else {}
+        return self
 
     def style(self, name, **kwargs):
         """Configures a single style for the printer.
@@ -35,12 +41,6 @@ class StylePrinter(object):
         """
         self.stylesheet[name] = kwargs
         return self
-
-    def block(self, style=None, indent=None, justify=None):
-        pass
-
-    def endblock(self):
-        pass
 
     def write(self, style, text, *args, **kwargs):
         """Writes formatted text to the configured stream, in a specified style.

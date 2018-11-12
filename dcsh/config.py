@@ -1,93 +1,14 @@
 """Configuration loading module."""
 
 import os
-import sys
 import yaml
-import functools
 import merge
 import argbuilder
 import shlex
 import subprocess
 from colors import color as ansicolor
-from .compose import scrape_docker_compose_commands
-
-default_stylesheet = {
-    'text': {},
-    'intro': {'fg':'green'},
-    'title': {'fg':'white', 'style':'bold+underline'},
-    'heading': {'fg':'white', 'style':'bold'},
-    'subheading': {'fg':'yellow'},
-    'on': {'fg':'green'},
-    'off': {'fg':'red'},
-    'error': {'fg':'red'},
-    'debug': {'fg':'blue', 'style':'italic'},
-}
-
-default_settings = {
-    'tasks': {},
-    'environment': {},
-    'debug': False,
-    'sudo': False,
-    'prompt': None,
-    'intro': 'DCSH started. Type "help" for assitance.',
-    'dc_path': 'docker-compose',
-}
-
-merge_settings = functools.partial(merge.with_strategy, {
-    'tasks': merge.shallow,
-    'environment': merge.shallow,
-    'services': merge.shallow,
-    'debug': merge.override,
-    'sudo': merge.override,
-    'prompt': merge.override,
-    'intro': merge.override,
-})
-
-run_defaults = {
-    'detach': False,
-    'name': None,
-    'user': None,
-    'remove': True,
-    'nodeps': False,
-    'service-ports': False,
-    'disable-tty': False,
-    'labels': {},
-    'publish': [],
-    'volumes': [],
-    'environment': {},
-    'help': None,
-    'service': None,
-    'args': [],
-}
-
-exec_defaults = {
-    'detach': False,
-    'privileged': None,
-    'user': None,
-    'disable-tty': None,
-    'index': None,
-    'environment': {},
-    'help': None,
-    'service': None,
-    'args': [],
-}
-
-task_arg_map = {
-    'detach': argbuilder.boolean('-d'),
-    'name': argbuilder.single('--name'),
-    'nodeps': argbuilder.boolean('--no-deps'),
-    'remove': argbuilder.boolean('--rm'),
-    'disable-tty': argbuilder.boolean('-T'),
-    'entrypoint': argbuilder.single('--entrypoint'),
-    'privileged': argbuilder.boolean('--privileged'),
-    'user': argbuilder.single('--user'),
-    'index': argbuilder.single('--index'),
-    'service-ports': argbuilder.boolean('--service-ports'),
-    'labels': argbuilder.multi('--label','{k}={v}'),
-    'volume': argbuilder.multi('--volume','{v}'),
-    'publish': argbuilder.multi('--publish','{v}'),
-    'environment': argbuilder.multi('-e','{k}={v}'),
-}
+from .compose import get_docker_compose_commands
+from .settings import *
 
 
 def load_yaml(file_path):
@@ -99,10 +20,12 @@ def load_yaml(file_path):
     return {}
 
 
-def load_settings(args):
+
+def load_settings(sudo, debug, no_color):
     """Loads settings, merging all available configration sources."""
 
-    settings = dict(default_settings)
+    settings.clear()
+    settings.update(default_settings)
     merge_settings(settings, load_yaml('/etc/dcsh.yml'))
     if 'HOME' in os.environ:
         merge_settings(settings, load_yaml(os.environ['HOME'] + '/.dcsh.yml'))
@@ -112,9 +35,11 @@ def load_settings(args):
     settings['services'] = dc_config.get('services', {})
     merge_settings(settings, dc_config.get('x-dcsh', {}))
     
-    if args.debug:
+    # TODO: use some schema validation here
+    
+    if debug:
         settings['debug'] = True
-    if args.sudo:
+    if sudo:
         settings['sudo'] = True
 
     # normalize task definitions
@@ -138,21 +63,17 @@ def load_settings(args):
     # default prompt depends on debug and no_color settings
     if not settings['prompt']:
         style={}
-        if not args.no_color:
+        if not no_color:
             style['fg'] = 'red' if settings['debug'] else 'yellow'
         prompt = '(dcsh debug mode)$' if settings['debug'] else '(dcsh)$'
         settings['prompt'] = ansicolor(prompt, **style)
 
     # supplement config with docker command set
-    commands = scrape_docker_compose_commands(settings)
+    commands = get_docker_compose_commands()
     if 'help' in commands:
         del commands['help']  # 'help' is already provided elsewhere
     settings['dc_commands'] = commands
-    return settings
 
-
-def validate_settings(settings):
-    # TODO: use some schema validation to enforce task.args as str or list
-    pass
-
-
+    # configure printer and run command
+    if not no_color:
+        printer.set_stylesheet(default_stylesheet)

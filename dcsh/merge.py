@@ -34,21 +34,21 @@ def merge(keys, left, right, default=None):
     return result
 
 
-def inner(left, right):
+def inner(left, right, default=None):
     """Returns a merge of right to left for all keys that exist in both."""
-    return merge(set(left.keys()) & set(right.keys()), left, right)
+    return merge(set(left.keys()) & set(right.keys()), left, right, default)
 
 
-def outer(left, right):
+def outer(left, right, default=None):
     """Returns a merge of right to left for all keys() that exist in either."""
-    return merge(set(left.keys()) + set(right.keys()), left, right)
+    return merge(set(left.keys()) + set(right.keys()), left, right, default)
 
 
-def left(left, right):
+def left(left, right, default=None):
     """Returns a merge of right to left for keys that exist only in left."""
-    return merge(left.keys(), left, right)
+    return merge(left.keys(), left, right, default)
 
 
-def right(left, right):
+def right(left, right, default=None):
     """Returns a merge of right to left for keys that exist only in right."""
-    return merge(right.keys(), left, right)
+    return merge(right.keys(), left, right, default)
