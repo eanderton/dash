@@ -18,19 +18,19 @@ x-dcsh:
   # shell commands that leverage services
   tasks:
     bash:
-      help: 'Runs a command in a BASH shell.'
+      help: 'Runs a command in a BASH shell'
       service: bash
     python:
-      help: 'Runs the python interpreter.'
+      help: 'Runs the python interpreter'
       service: python-dev
       args: python
     lint:
-      help: 'Lints the project.'
+      help: 'Lints the project'
       service: python-dev
       args: flake8
     ps:
       exec: true
-      help: 'Runs ps on the webserver service.'
+      help: 'Runs ps on the webserver service'
       service: webserver
       args: ps aux
 

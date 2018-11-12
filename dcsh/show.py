@@ -1,14 +1,13 @@
 """Help subcommand module."""
 
-from .config import get_docker_compose_commands
-
 
 def do_show(printer, settings):
     """Renders user-friendly help describing the current configuration."""
 
     printer.nl().title('DCSH Configuration').nl()
-    printer.heading('Flags').nl()
+    printer.nl().heading('Settings').nl()
 
+    printer.subheading('  dc_path: ').text(settings['dc_path']).nl()
     printer.subheading('  Debug mode: ')
     if settings['debug']:
         printer.on('Enabled').nl()
@@ -17,7 +16,7 @@ def do_show(printer, settings):
 
     printer.subheading('  Sudo mode: ')
     if settings['sudo']:
-        printer.on('Enabled - Calls to `dc` will use `sudo`.').nl()
+        printer.on('Enabled - All docker-compose commands will use "sudo".').nl()
     else:
         printer.off('Disabled').nl()
 
@@ -56,6 +55,6 @@ def do_help(printer, settings):
     printer.nl()
     
     printer.heading('Docker-compose commands')
-    for name, helptext in get_docker_compose_commands().items():
+    for name, helptext in settings['dc_commands'].items():
         printer.subheading('  {}', name).text(': {}', helptext).nl()
     printer.nl()

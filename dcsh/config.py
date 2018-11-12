@@ -8,9 +8,8 @@ import merge
 import argbuilder
 import shlex
 import subprocess
-import re
 from colors import color as ansicolor
-
+from .compose import scrape_docker_compose_commands
 
 default_stylesheet = {
     'text': {},
@@ -26,17 +25,16 @@ default_stylesheet = {
 
 default_settings = {
     'tasks': {},
-    'scripts': {},
     'environment': {},
     'debug': False,
     'sudo': False,
     'prompt': None,
-    'intro': 'DCSH started. Type "help" for assitance.'
+    'intro': 'DCSH started. Type "help" for assitance.',
+    'dc_path': 'docker-compose',
 }
 
 merge_settings = functools.partial(merge.with_strategy, {
     'tasks': merge.shallow,
-    'scripts': merge.shallow,
     'environment': merge.shallow,
     'services': merge.shallow,
     'debug': merge.override,
@@ -145,6 +143,11 @@ def load_settings(args):
         prompt = '(dcsh debug mode)$' if settings['debug'] else '(dcsh)$'
         settings['prompt'] = ansicolor(prompt, **style)
 
+    # supplement config with docker command set
+    commands = scrape_docker_compose_commands(settings)
+    if 'help' in commands:
+        del commands['help']  # 'help' is already provided elsewhere
+    settings['dc_commands'] = commands
     return settings
 
 
@@ -153,24 +156,3 @@ def validate_settings(settings):
     pass
 
 
-cmd_expr = re.compile(r'\s*(\w+)\s*(.+)$')
-
-
-def get_docker_compose_commands():
-    """Scrapes docker-compose help output to get command names and help text."""
-
-    commands = {}
-    sh = subprocess.Popen('docker-compose', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    _, text = sh.communicate()
-    
-    lines = text.splitlines()
-    for ii in range(len(lines)):
-        if lines[ii] == 'Commands:':
-            break
-    for jj in range(ii + 1, len(lines)):
-        result = cmd_expr.match(lines[jj])
-        if result:
-            commands[result.group(1)] = result.group(2)
-    if 'help' in commands:
-        del commands['help']  # 'help' is already provided elsewhere
-    return commands

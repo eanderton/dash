@@ -4,10 +4,9 @@ import cmd
 import functools
 import shlex
 import subprocess
-from .config import get_docker_compose_commands
 from .show import do_help
 from .show import do_show
-
+from .compose import run_compose
 
 class ShellExit(Exception):
     """Used to signal a clean exit from the shell."""
@@ -21,7 +20,7 @@ class DcShell(cmd.Cmd):
         self.prompt = settings['prompt'] + ' '
         self.intro = settings['intro']
         
-        for name, help_text in get_docker_compose_commands().items():
+        for name, help_text in settings['dc_commands'].items():
             fn = functools.partial(self._run_command, name)
             setattr(self, 'do_' + name, fn)
             setattr(fn, '__doc__', help_text)
@@ -34,23 +33,13 @@ class DcShell(cmd.Cmd):
         
         cmd.Cmd.__init__(self)
 
-    def _run_compose(self, *args):
-        """Runs docker-compose with the specified args."""
-        cmd = ['docker-compose'] + list(args)
-        if self.settings['sudo']:
-            cmd = ['sudo'] + cmd
-        if self.settings['debug']:
-            self.printer.writeln('debug', 'Running: {}', cmd)
-        sh = subprocess.Popen(cmd)
-        sh.communicate()
-   
     def _run_command(self, name, cmdargs):
         """Runs a specified docker-compose command with optional args."""
-        self._run_compose(name, *shlex.split(cmdargs))
+        run_compose(self.printer, self.settings, name, *shlex.split(cmdargs))
 
     def _run_task(self, task, cmdargs):
         """Runs a specified task definition with optional args."""
-        self._run_compose(*(task['compiled_args'] + shlex.split(cmdargs)))
+        run_compose(self.printer, self.settings, *(task['compiled_args'] + shlex.split(cmdargs)))
 
     def get_names(self):
         """Cmd override to provide sane name support for cmd.Cmd."""
@@ -66,7 +55,7 @@ class DcShell(cmd.Cmd):
 
     def do_dc(self, cmdargs):
         """Passthrough to docker-compose."""
-        self._run_compose(*shlex.split(cmdargs))
+        run_compose(self.printer, self.settings, *shlex.split(cmdargs))
 
     def do_show(self, cmdargs):
         """Shows current configuration."""
