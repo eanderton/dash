@@ -26,8 +26,8 @@ def multi(*fmt):
 
     def fn(value):
         if isinstance(value, dict):
-            return [f.format(v=v,k=v) for f in fmt for k, v in value.items()]
-        elif value:    
+            return [f.format(v=v, k=v) for f in fmt for k, v in value.items()]
+        elif value:
             return [f.format(k=v) for f in fmt for v in value]
         return []
     return fn

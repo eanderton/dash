@@ -3,12 +3,12 @@
 import cmd
 import functools
 import shlex
-import subprocess
 from .show import do_help
 from .show import do_show
 from .settings import settings
 from .settings import printer
 from .compose import run_compose
+
 
 class ShellExit(Exception):
     """Used to signal a clean exit from the shell."""
@@ -19,18 +19,18 @@ class DcShell(cmd.Cmd):
     def __init__(self):
         self.prompt = settings['prompt'] + ' '
         self.intro = settings['intro']
-        
+
         for name, help_text in settings['dc_commands'].items():
             fn = functools.partial(self._run_command, name)
             setattr(self, 'do_' + name, fn)
             setattr(fn, '__doc__', help_text)
-        
+
         for name, task in settings['tasks'].items():
             fn = functools.partial(self._run_task, task)
             setattr(self, 'do_' + name, fn)
             if task['help']:
                 setattr(fn, '__doc__', task['help'])
-        
+
         cmd.Cmd.__init__(self)
 
     def _run_command(self, name, cmdargs):
@@ -51,7 +51,7 @@ class DcShell(cmd.Cmd):
 
     def do_exit(self, cmdargs):
         """Ends the shell session."""
-        raise ShellExit() 
+        raise ShellExit()
 
     def do_dc(self, cmdargs):
         """Passthrough to docker-compose."""
@@ -78,7 +78,7 @@ class DcShell(cmd.Cmd):
                 break
             except KeyboardInterrupt:
                 printer.text('KeyboardInterrupt').nl()
-	    except ShellExit:
+            except ShellExit:
                 printer.text('Exiting DCSH').nl()
                 break
 

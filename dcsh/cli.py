@@ -2,9 +2,7 @@
 
 import sys
 import argparse
-from .printer import StylePrinter
 from .config import load_settings
-from .settings import settings
 from .settings import printer
 from .show import do_show
 from .shell import do_shell
@@ -20,7 +18,7 @@ def set_default_subparser(self, name, args=None, positional_args=0):
     it works with 2.6 assuming argparse is installed
     """
     subparser_found = False
-    existing_default = False # check if default parser previously defined
+    existing_default = False  # check if default parser previously defined
     for arg in sys.argv[1:]:
         if arg in ['-h', '--help']:  # global help if no subparser
             break
@@ -31,7 +29,7 @@ def set_default_subparser(self, name, args=None, positional_args=0):
             for sp_name in x._name_parser_map.keys():
                 if sp_name in sys.argv[1:]:
                     subparser_found = True
-                if sp_name == name: # check existance of default parser
+                if sp_name == name:  # check existance of default parser
                     existing_default = True
         if not subparser_found:
             # If the default subparser is not among the existing ones,
@@ -44,7 +42,7 @@ def set_default_subparser(self, name, args=None, positional_args=0):
                     if not isinstance(x, argparse._SubParsersAction):
                         continue
                     x.add_parser(name)
-                    break # this works OK, but should I check further?
+                    break  # this works OK, but should I check further?
 
             # insert default in last position before global positional
             # arguments, this implies no global options are specified after
@@ -64,23 +62,23 @@ def main():
     Argument parsing, I/O configuration, and subcommmand dispatch are conducted here.
     """
 
-    # configure parser 
+    # configure parser
     parser = argparse.ArgumentParser('Shell wrapper for docker-compose')
     parser.add_argument('--no-color', action='store_true', help='turns off ANSI colors')
     parser.add_argument('-s', '--sudo', action='store_true', help='run docker-compose using sudo')
     parser.add_argument('-d', '--debug', action='store_true', help='enable debug output')
     parser.set_defaults(no_color=False, sudo=False, debug=False)
     commands = parser.add_subparsers(title='subcommands')
- 
+
     launch = commands.add_parser('launch', help='launches configured subshell (default)')
     launch.set_defaults(fn=do_shell)
- 
+
     show = commands.add_parser('show', help='outputs details about dcsh config')
     show.set_defaults(fn=do_show)
 
     parser.set_default_subparser('launch')
     args = parser.parse_args()
-    
+
     # parse arguments, load+validate settings, and run command
     try:
         load_settings(args.sudo, args.debug, args.no_color)

@@ -17,7 +17,7 @@ def with_strategy(strategy, dst, src):
     If a key is found in src that is not in the strategy, its value is ignored.
     """
     for key in src:
-        strategy.get(key, lambda d,s,k: None)(dst, src, key)
+        strategy.get(key, lambda d, s, k: None)(dst, src, key)
 
 
 def merge(keys, left, right, default=None):

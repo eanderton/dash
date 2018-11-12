@@ -3,14 +3,15 @@
 import sys
 from colors import color
 
+
 class StylePrinter(object):
     """Styled printer for generating ANSI decorated text."""
-    
+
     def __init__(self, stream=None, stylesheet=None):
         """Constructs a new stylesheet capable printer around a stream and stylesheet.
 
         The optional stream argument defaults to stdout if none is applied.
-        
+
         The optional stylesheet argument is a dict of style names to
         a dict of style settings.  These settings are forwarded to the
         ansicolor `color` function as kwargs.  Please see the ansicolor
@@ -18,7 +19,7 @@ class StylePrinter(object):
 
         All methods return self, such that chained calls are possible.
 
-        This class provides a __getattr__ override that behaves like a proxy for 
+        This class provides a __getattr__ override that behaves like a proxy for
         write(stylename, ...).  This has a side-effect of allowing almost anything as
         a valid method name. As a result, invalid styles will still proxy to write()
         with no styling applied.
@@ -47,11 +48,11 @@ class StylePrinter(object):
 
         If no args or kwargs are supplied, the `text` argument is applied literally. Otherwise,
         the *args and **kwargs arguments are applied against text using str.format.
-        
+
         If the indicated style is not in the stylesheet, no style formatting is applied.
         """
         formatted_text = text.format(*args, **kwargs) if args or kwargs else text
-        self.stream.write(color(formatted_text, **self.stylesheet.get(style,{})))
+        self.stream.write(color(formatted_text, **self.stylesheet.get(style, {})))
         return self
 
     def writeln(self, style, text, *args, **kwargs):
@@ -72,6 +73,7 @@ class StylePrinter(object):
 
     def __getattr__(self, name):
         """Returns write wrapper for the style indicated by the attribute name."""
+
         def fn(*args, **kwargs):
             return self.write(name, *args, **kwargs)
         return fn

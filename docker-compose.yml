@@ -27,7 +27,7 @@ x-dcsh:
     lint:
       help: 'Lints the project'
       service: python-dev
-      args: flake8
+      args: flake8 dcsh/*.py
     ps:
       exec: true
       help: 'Runs ps on the webserver service'

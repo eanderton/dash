@@ -5,10 +5,16 @@ import yaml
 import merge
 import argbuilder
 import shlex
-import subprocess
 from colors import color as ansicolor
 from .compose import get_docker_compose_commands
-from .settings import *
+from .settings import default_stylesheet
+from .settings import default_settings
+from .settings import merge_settings
+from .settings import run_defaults
+from .settings import exec_defaults
+from .settings import task_arg_map
+from .settings import settings
+from .settings import printer
 
 
 def load_yaml(file_path):
@@ -20,7 +26,6 @@ def load_yaml(file_path):
     return {}
 
 
-
 def load_settings(sudo, debug, no_color):
     """Loads settings, merging all available configration sources."""
 
@@ -30,13 +35,13 @@ def load_settings(sudo, debug, no_color):
     if 'HOME' in os.environ:
         merge_settings(settings, load_yaml(os.environ['HOME'] + '/.dcsh.yml'))
     merge_settings(settings, load_yaml('.dcsh.yml'))
-    
+
     dc_config = load_yaml('./docker-compose.yml')
     settings['services'] = dc_config.get('services', {})
     merge_settings(settings, dc_config.get('x-dcsh', {}))
-    
+
     # TODO: use some schema validation here
-    
+
     if debug:
         settings['debug'] = True
     if sudo:
@@ -55,14 +60,14 @@ def load_settings(sudo, debug, no_color):
         if isinstance(taskdef['args'], str):
             taskdef['args'] = shlex.split(taskdef['args'])
         taskdef['compiled_args'] += \
-                argbuilder.build(task_arg_map, taskdef) + \
-                [taskdef['service']] + \
-                taskdef['args']
+            argbuilder.build(task_arg_map, taskdef) + \
+            [taskdef['service']] + \
+            taskdef['args']
         settings['tasks'][name] = taskdef
 
     # default prompt depends on debug and no_color settings
     if not settings['prompt']:
-        style={}
+        style = {}
         if not no_color:
             style['fg'] = 'red' if settings['debug'] else 'yellow'
         prompt = '(dcsh debug mode)$' if settings['debug'] else '(dcsh)$'

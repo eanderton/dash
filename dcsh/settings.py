@@ -7,14 +7,14 @@ from .printer import StylePrinter
 
 default_stylesheet = {
     'text': {},
-    'intro': {'fg':'green'},
-    'title': {'fg':'white', 'style':'bold+underline'},
-    'heading': {'fg':'white', 'style':'bold'},
-    'subheading': {'fg':'yellow'},
-    'on': {'fg':'green'},
-    'off': {'fg':'red'},
-    'error': {'fg':'red'},
-    'debug': {'fg':'blue', 'style':'italic'},
+    'intro': {'fg': 'green'},
+    'title': {'fg': 'white', 'style': 'bold+underline'},
+    'heading': {'fg': 'white', 'style': 'bold'},
+    'subheading': {'fg': 'yellow'},
+    'on': {'fg': 'green'},
+    'off': {'fg': 'red'},
+    'error': {'fg': 'red'},
+    'debug': {'fg': 'blue', 'style': 'italic'},
 }
 
 
@@ -82,10 +82,10 @@ task_arg_map = {
     'user': argbuilder.single('--user'),
     'index': argbuilder.single('--index'),
     'service-ports': argbuilder.boolean('--service-ports'),
-    'labels': argbuilder.multi('--label','{k}={v}'),
-    'volume': argbuilder.multi('--volume','{v}'),
-    'publish': argbuilder.multi('--publish','{v}'),
-    'environment': argbuilder.multi('-e','{k}={v}'),
+    'labels': argbuilder.multi('--label', '{k}={v}'),
+    'volume': argbuilder.multi('--volume', '{v}'),
+    'publish': argbuilder.multi('--publish', '{v}'),
+    'environment': argbuilder.multi('-e', '{k}={v}'),
 }
 
 
@@ -95,5 +95,3 @@ settings = dict(default_settings)
 
 # singleton state for output printer
 printer = StylePrinter()
-
-

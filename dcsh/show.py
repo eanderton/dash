@@ -38,8 +38,13 @@ def do_help():
     """Renders user-friendly help describing commands and user-defined tasks."""
 
     printer.nl().title('DCSH Shell Commands').nl()
-   
-    printer.nl().heading('Basic DCSH commands').nl()
+
+    printer.nl().heading('Docker-compose commands').nl()
+    for name, helptext in settings['dc_commands'].items():
+        printer.subheading('  {}', name).text(': {}', helptext).nl()
+    printer.nl()
+
+    printer.heading('Built-in DCSH commands').nl()
     printer.subheading('  help: ').text('This help screen').nl()
     printer.subheading('  show: ').text('Displays DCSH configuration details').nl()
     printer.subheading('  exit: ').text('Exits the shell').nl()
@@ -55,9 +60,4 @@ def do_help():
                 printer.nl()
     else:
         printer.text('No tasks are configured.').nl()
-    printer.nl()
-    
-    printer.heading('Docker-compose commands')
-    for name, helptext in settings['dc_commands'].items():
-        printer.subheading('  {}', name).text(': {}', helptext).nl()
     printer.nl()
