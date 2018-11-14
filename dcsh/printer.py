@@ -4,10 +4,22 @@ import sys
 from colors import color
 
 
+default_style = {
+    'display': 'inline',
+    'padding-top': 0,
+    'padding-bottom': 0,
+    'before': '',
+    'after': '',
+    'bold': False,
+    'italic': False,
+    'underline': False,
+}
+
+
 class StylePrinter(object):
     """Styled printer for generating ANSI decorated text."""
 
-    def __init__(self, stream=None, stylesheet=None):
+    def __init__(self, stream=None, stylesheet=None, style_defaults=None):
         """Constructs a new stylesheet capable printer around a stream and stylesheet.
 
         The optional stream argument defaults to stdout if none is applied.
@@ -25,25 +37,17 @@ class StylePrinter(object):
         with no styling applied.
         """
 
+        self._start_newline = True
+        self.ansimode = True
+        self._style_defaults = style_defaults or default_style
         self.stream = stream if stream else sys.stdout
-        self.set_stylesheet(stylesheet)
+        self.stylesheet = stylesheet or {}
 
-    def set_stylesheet(self, stylesheet=None):
-        """Sets the printer's stylesheet."""
-        self.stylesheet = dict(stylesheet) if stylesheet else {}
-        return self
+    def _get_style(self, style_name):
+        """Gets the style for name, populated with defaults."""
+        return dict(self._style_defaults, **self.stylesheet.get(style_name, {}))
 
-    def style(self, name, **kwargs):
-        """Configures a single style for the printer.
-
-        The kwargs provided are forwarded to the ansicolor `color` function
-        on styled formatting calls.  Please see the ansicolor module for more
-        information.
-        """
-        self.stylesheet[name] = kwargs
-        return self
-
-    def write(self, style, text, *args, **kwargs):
+    def write(self, style_name, text, *args, **kwargs):
         """Writes formatted text to the configured stream, in a specified style.
 
         If no args or kwargs are supplied, the `text` argument is applied literally. Otherwise,
@@ -51,8 +55,41 @@ class StylePrinter(object):
 
         If the indicated style is not in the stylesheet, no style formatting is applied.
         """
+        style = self._get_style(style_name)
+
+        # handle display conditions for hidden, block, and start
+        display = style['display']
+        if display == 'hidden':
+            return  # do nothing
+        elif display in ['block', 'start'] and not self._start_newline:
+            self.stream.write('\n')
+
+        # emit the formatted text with padding and before/after style
         formatted_text = text.format(*args, **kwargs) if args or kwargs else text
-        self.stream.write(color(formatted_text, **self.stylesheet.get(style, {})))
+        text = ('\n' * style['padding-top']) + style['before'] + formatted_text + \
+                style['after'] + ('\n' * style['padding-bottom'])
+
+        # configure ansi formatting
+        ansicolor = {}
+        if self.ansimode:
+            ansi_style = '+'.join([k for k in ['bold', 'underline', 'italic'] if style[k]])
+            if ansi_style:
+                ansicolor['style'] = ansi_style
+            if 'color' in style:
+                ansicolor['fg'] = style['color']
+
+        # emit to stream
+        if ansicolor:
+            self.stream.write(color(text, **ansicolor))
+        else:
+            self.stream.write(text)
+
+        # handle block condition and newline boolean
+        if display in ['block', 'end']:
+            self.stream.write('\n')
+            self._start_newline = True
+        else:
+            self._start_newline = text.endswith('\n')
         return self
 
     def writeln(self, style, text, *args, **kwargs):

@@ -2,7 +2,6 @@
 
 import os
 import yaml
-import merge
 import argbuilder
 import shlex
 from colors import color as ansicolor
@@ -12,6 +11,7 @@ from .settings import default_settings
 from .settings import merge_settings
 from .settings import run_defaults
 from .settings import exec_defaults
+from .settings import merge_task
 from .settings import task_arg_map
 from .settings import settings
 from .settings import printer
@@ -29,18 +29,16 @@ def load_yaml(file_path):
 def load_settings(sudo, debug, no_color):
     """Loads settings, merging all available configration sources."""
 
-    settings.clear()
-    settings.update(default_settings)
-    merge_settings(settings, load_yaml('/etc/dcsh.yml'))
+    data = merge_settings(default_settings, load_yaml('/etc/dcsh.yml'))
     if 'HOME' in os.environ:
-        merge_settings(settings, load_yaml(os.environ['HOME'] + '/.dcsh.yml'))
-    merge_settings(settings, load_yaml('.dcsh.yml'))
-
+        data = merge_settings(data, load_yaml(os.environ['HOME'] + '/.dcsh.yml'))
+    data = merge_settings(data, load_yaml('.dcsh.yml'))
     dc_config = load_yaml('./docker-compose.yml')
-    settings['services'] = dc_config.get('services', {})
-    merge_settings(settings, dc_config.get('x-dcsh', {}))
+    data = merge_settings(data, dc_config.get('x-dcsh', {}))
 
     # TODO: use some schema validation here
+    settings.clear()
+    settings.update(data)
 
     if debug:
         settings['debug'] = True
@@ -56,7 +54,7 @@ def load_settings(sudo, debug, no_color):
             taskdef = dict(run_defaults)
             taskdef['compiled_args'] = ['run']
         taskdef['environment'] = settings['environment']
-        taskdef = merge.left(taskdef, value)
+        taskdef = merge_task(taskdef, value)
         if isinstance(taskdef['args'], str):
             taskdef['args'] = shlex.split(taskdef['args'])
         taskdef['compiled_args'] += \
@@ -80,5 +78,4 @@ def load_settings(sudo, debug, no_color):
     settings['dc_commands'] = commands
 
     # configure printer and run command
-    if not no_color:
-        printer.set_stylesheet(default_stylesheet)
+    printer.ansimode = not no_color

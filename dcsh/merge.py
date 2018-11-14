@@ -1,54 +1,93 @@
 """Utility for configurable dictionary merges."""
 
 
-def override(dst, src, key):
-    """Sets key field from src in dstc."""
-    dst[key] = src[key]
+class NoValue(object):
+    """ Placeholder for a no-value type. """
+    pass
 
 
-def shallow(dst, src, key):
+# singleton for NoValue
+no_value = NoValue()
+
+
+def discard(dst, src, key, default):
+    """Does nothing, effectively discarding the merged value."""
+    return no_value
+
+
+def override(left, right, key, default):
+    """Returns right[key] if exists, else left[key]."""
+    return right.get(key, left.get(key, default))
+
+
+def shallow(left, right, key, default):
     """Updates fields from src at key, into key at dst. """
-    dst[key].update(src[key])
+    left_v = left.get(key, default)
+    if key in right:
+        right_v = right[key]
+        if key in left:
+            if isinstance(left_v, dict) and isinstance(right_v, dict):
+                return dict(left_v, **right_v)
+        return right_v
+    return left_v
 
 
-def with_strategy(strategy, dst, src):
-    """Merges src into dst destructively, using the provided strategy
-
-    If a key is found in src that is not in the strategy, its value is ignored.
-    """
-    for key in src:
-        strategy.get(key, lambda d, s, k: None)(dst, src, key)
+# TODO: deep merge
 
 
-def merge(keys, left, right, default=None):
-    """Performs a merge for a provided set of keys, preferring left over right for values.
+class Merge(object):
+    def __init__(self, key_fn, default_fn, *args, **kwargs):
+        """Creates a merge strategy for the provided dictionaries and/or keys."""
+        self._key_fn = key_fn
+        if isinstance(key_fn, list):
+            self._key_fn = lambda l, r: key_fn
+        self._default_fn = default_fn
+        self._strategy = dict(*args, **kwargs)
 
-    Returns the merge of right to left for all keys in keys.
+    def __call__(self, left, right, default=None):
+        """Returns the merge of right to left for all keys in keys.
 
-    If no such key exists in left or right, default is used as the value.
-    """
-
-    result = {}
-    for k in keys:
-        result[k] = right[k] if k in right else left.get(k, default)
-    return result
-
-
-def inner(left, right, default=None):
-    """Returns a merge of right to left for all keys that exist in both."""
-    return merge(set(left.keys()) & set(right.keys()), left, right, default)
-
-
-def outer(left, right, default=None):
-    """Returns a merge of right to left for all keys() that exist in either."""
-    return merge(set(left.keys()) + set(right.keys()), left, right, default)
-
-
-def left(left, right, default=None):
-    """Returns a merge of right to left for keys that exist only in left."""
-    return merge(left.keys(), left, right, default)
+        If no such key exists in left or right, default is used as the value.
+        """
+        keys = self._key_fn(left, right)
+        result = {}
+        for key in keys:
+            value = self._strategy.get(key, self._default_fn)(left, right, key, default)
+            if value != no_value:
+                result[key] = value
+        return result
 
 
-def right(left, right, default=None):
-    """Returns a merge of right to left for keys that exist only in right."""
-    return merge(right.keys(), left, right, default)
+def inner(left, right):
+    """Returns keys from right to left for all keys that exist in both."""
+    return set(left.keys()) & set(right.keys())
+
+
+def full(left, right):
+    """Returns keys from right to left for all keys that exist in either."""
+    return set(left.keys()) | set(right.keys())
+
+
+def outermost(left, right):
+    """Returns keys from right to left for all keys exclusive to both left and right."""
+    return set(left.keys()) ^ set(right.keys())
+
+
+def left(left, right):
+    """Returns keys from right to left for all keys in left."""
+    return left.keys()
+
+
+def leftmost(left, right):
+    """Returns keys from right to left for keys that exist only in left."""
+    return left.keys() - right.keys()
+
+
+def right(left, right):
+    """Returns keys from right to left for all keys in right."""
+    return right.keys()
+
+
+def rightmost(left, right):
+    """Returns keys from right to left for keys that exist only in right."""
+    return right.keys() - left.keys()

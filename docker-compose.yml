@@ -13,38 +13,25 @@ x-walled-garden-args: &walled-garden-args
  
 # DCSH configuration.
 x-dcsh:
-  sudo: true
-
-  # shell commands that leverage services
   tasks:
-    bash:
-      help: 'Runs a command in a BASH shell'
-      service: bash
     python:
-      help: 'Runs the python interpreter'
+      help: 'Runs python interpreter'
       service: python-dev
-      args: python
+      args: python 
+    pydoc:
+      help: 'Help for python'
+      service: python-dev
+      args: python -m pydoc
+    test:
+      help: 'Runs unit tests'
+      service: python-dev
+      args: python -m unittest discover -s ./tests
     lint:
       help: 'Lints the project'
       service: python-dev
-      args: flake8 dcsh/*.py
-    ps:
-      exec: true
-      help: 'Runs ps on the webserver service'
-      service: webserver
-      args: ps aux
-
-  # environment vars added to the subshell on launch
-  environment:
-    foo: bar
-
+      args: flake8 dcsh/*.py tests/*.py
 
 services:
-  webserver:
-    image: nginx
-    volumes:
-      - .:/usr/share/nginx/html:ro
-  
   python-dev:
     build:
       context: .
@@ -53,12 +40,3 @@ services:
     volumes:
       - .:/workspace
     working_dir: /workspace
-
-  bash:
-    image: ubuntu
-    volumes:
-      - .:/workspace
-    entrypoint: /bin/bash
-    working_dir: /workspace
-
-

@@ -6,58 +6,52 @@ from .settings import printer
 
 def do_show():
     """Renders user-friendly help describing the current configuration."""
+    printer.title('DCSH Configuration')
 
-    printer.nl().title('DCSH Configuration').nl()
-    printer.nl().heading('Settings').nl()
-
-    printer.subheading('  dc_path: ').text(settings['dc_path']).nl()
-    printer.subheading('  Debug mode: ')
+    printer.heading('Settings')
+    printer.subheading('dc_path:').text(settings['dc_path'])
+    printer.subheading('Debug mode:')
     if settings['debug']:
-        printer.on('Enabled').nl()
+        printer.on('Enabled')
     else:
-        printer.off('Disabled').nl()
+        printer.off('Disabled')
 
-    printer.subheading('  Sudo mode: ')
+    printer.subheading('Sudo mode:')
     if settings['sudo']:
-        printer.on('Enabled - All docker-compose commands will use "sudo".').nl()
+        printer.on('Enabled - All docker-compose commands will use "sudo".')
     else:
-        printer.off('Disabled').nl()
+        printer.off('Disabled')
 
+    printer.heading('Task environment')
     if settings['environment']:
-        printer.nl()
-        printer.heading('Task environment').nl()
         for name, value in settings['environment'].items():
-            printer.subheading('  {}: ', name)
-            printer.text(value).nl()
+            printer.subheading('{}:', name).text(value)
     else:
-        printer.text('No task environment vars are configured.').nl()
-    printer.nl()
+        printer.newline().text('No task environment vars are configured.')
+    printer.newline()
 
 
 def do_help():
     """Renders user-friendly help describing commands and user-defined tasks."""
+    printer.title('DCSH Shell Commands')
 
-    printer.nl().title('DCSH Shell Commands').nl()
-
-    printer.nl().heading('Docker-compose commands').nl()
+    printer.heading('Docker-compose commands')
     for name, helptext in settings['dc_commands'].items():
-        printer.subheading('  {}', name).text(': {}', helptext).nl()
-    printer.nl()
+        printer.subheading('{}:', name).text(helptext)
 
-    printer.heading('Built-in DCSH commands').nl()
-    printer.subheading('  help: ').text('This help screen').nl()
-    printer.subheading('  show: ').text('Displays DCSH configuration details').nl()
-    printer.subheading('  exit: ').text('Exits the shell').nl()
-    printer.subheading('  dc: ').text('Runs docker-compose').nl()
+    printer.heading('Built-in DCSH commands')
+    printer.subheading('help:').text('This help screen')
+    printer.subheading('show:').text('Displays DCSH configuration details')
+    printer.subheading('exit:').text('Exits the shell')
+    printer.subheading('dc:').text('Runs docker-compose')
 
     if settings['tasks']:
-        printer.nl().heading('User defined tasks').nl()
+        printer.heading('User defined tasks')
         for name, value in settings['tasks'].items():
-            printer.subheading('  {}', name)
             if value['help']:
-                printer.text(': {}', value['help']).nl()
+                printer.subheading('{}:', name).text(value['help'])
             else:
-                printer.nl()
+                printer.subheading(name)
     else:
-        printer.text('No tasks are configured.').nl()
-    printer.nl()
+        printer.text('No tasks are configured.')
+    printer.newline()

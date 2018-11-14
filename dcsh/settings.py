@@ -1,20 +1,20 @@
 """Module for program settings and defaults."""
 
 import merge
-import functools
 import argbuilder
 from .printer import StylePrinter
 
+
 default_stylesheet = {
     'text': {},
-    'intro': {'fg': 'green'},
-    'title': {'fg': 'white', 'style': 'bold+underline'},
-    'heading': {'fg': 'white', 'style': 'bold'},
-    'subheading': {'fg': 'yellow'},
-    'on': {'fg': 'green'},
-    'off': {'fg': 'red'},
-    'error': {'fg': 'red'},
-    'debug': {'fg': 'blue', 'style': 'italic'},
+    'intro': {'display': 'block', 'color': 'green'},
+    'title': {'display': 'block', 'color': 'white', 'bold': True, 'underline': True},
+    'heading': {'display': 'start', 'padding-top': 1, 'color': 'white', 'bold': True},
+    'subheading': {'display': 'start', 'before': '  ', 'after': ' ', 'color': 'yellow'},
+    'on': {'color': 'green'},
+    'off': {'color': 'red'},
+    'error': {'color': 'red'},
+    'debug': {'color': 'blue', 'italic': True},
 }
 
 
@@ -29,16 +29,15 @@ default_settings = {
 }
 
 
-merge_settings = functools.partial(merge.with_strategy, {
+merge_settings = merge.Merge(merge.left, merge.discard, {
     'tasks': merge.shallow,
     'environment': merge.shallow,
-    'services': merge.shallow,
     'debug': merge.override,
     'sudo': merge.override,
     'prompt': merge.override,
     'intro': merge.override,
+    'dc_path': merge.override,
 })
-
 
 run_defaults = {
     'detach': False,
@@ -70,6 +69,7 @@ exec_defaults = {
     'args': [],
 }
 
+merge_task = merge.Merge(merge.left, merge.override)
 
 task_arg_map = {
     'detach': argbuilder.boolean('-d'),
@@ -94,4 +94,4 @@ settings = dict(default_settings)
 
 
 # singleton state for output printer
-printer = StylePrinter()
+printer = StylePrinter(stylesheet=default_stylesheet)
