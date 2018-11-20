@@ -88,16 +88,36 @@ class TestMerge(unittest.TestCase):
                          {'a': 1, 'b': 222, 'c': 333})
 
     def test_outermost(self):
-        pass
+        """Merge for keys exclusive to left and right. """
+        left = {'a': 1, 'b': 2}
+        right = {'b': 222, 'c': 333}
+        self.assertEqual(merge.Merge(merge.outermost, merge.override)(left, right),
+                         {'a': 1, 'c': 333})
 
     def test_left(self):
-        pass
+        """Merge for keys in left."""
+        left = {'a': 1, 'b': 2}
+        right = {'b': 222, 'c': 333}
+        self.assertEqual(merge.Merge(merge.left, merge.override)(left, right),
+                         {'a': 1, 'b': 222})
 
     def test_leftmost(self):
-        pass
+        """Merge for keys exclusive to left."""
+        left = {'a': 1, 'b': 2}
+        right = {'b': 222, 'c': 333}
+        self.assertEqual(merge.Merge(merge.left, merge.override)(left, right),
+                         {'a': 1, 'b': 222})
 
     def test_right(self):
-        pass
+        """Merge for keys in right."""
+        left = {'a': 1, 'b': 2}
+        right = {'b': 222, 'c': 333}
+        self.assertEqual(merge.Merge(merge.right, merge.override)(left, right),
+                         {'b': 222, 'c': 333})
 
     def tets_rightmost(self):
-        pass
+        """Merge for keys exclusive to right."""
+        left = {'a': 1, 'b': 2}
+        right = {'b': 222, 'c': 333}
+        self.assertEqual(merge.Merge(merge.rightmost, merge.override)(left, right),
+                         {'b': 222, 'c': 333})
