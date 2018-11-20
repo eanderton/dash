@@ -25,6 +25,34 @@ default_style = {
 }
 
 
+class StylePrinterFn(object):
+    """Function wrapper that also behaves like a context manager."""
+
+    def __init__(self, ctx, style_name):
+        """Creates a new instance around a printer context and a style name."""
+        self.ctx = ctx
+        self.style_name = style_name
+
+    def __call__(self, *args, **kwargs):
+        """Calls the wrapped printer and style with the provided args and kwargs."""
+        return self.ctx.write(self.style_name, *args, **kwargs)
+
+    def __enter__(self):
+        """Returns a new printer based on the wrapped printer and style name.
+
+        The new printer uses the same settings as the wrapped printer, but the default style
+        is set to the style that corresponds to the wrapped style name."""
+
+        p = StylePrinter(self.ctx.stream, self.ctx.stylesheet, self.ctx._get_style(self.style_name))
+        p._start_newline = self.ctx._start_newline
+        p.ansimode = self.ctx.ansimode
+        return p
+
+    def __exit__(self, type, value, traceback):
+        """Placeholder to for context management; does nothing."""
+        pass
+
+
 class StylePrinter(object):
     """Styled printer for generating ANSI decorated text."""
 
@@ -105,16 +133,15 @@ class StylePrinter(object):
     def newline(self):
         """Writes a newline to the configured stream."""
         self.stream.write('\n')
+        self._start_newline = True
         return self
 
     def nl(self):
         """Writes a newline to the configured stream."""
         self.stream.write('\n')
+        self._start_newline = True
         return self
 
-    def __getattr__(self, name):
+    def __getattr__(self, style_name):
         """Returns write wrapper for the style indicated by the attribute name."""
-
-        def fn(*args, **kwargs):
-            return self.write(name, *args, **kwargs)
-        return fn
+        return StylePrinterFn(self, style_name)
