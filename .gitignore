@@ -1,6 +1,7 @@
 *.pyc
 *.swp
 *.swo
+/.coverage
 /.dcsh.yml
 /*.egg-info
 /env

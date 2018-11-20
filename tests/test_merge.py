@@ -45,20 +45,20 @@ class TestKeys(unittest.TestCase):
     def test_full(self):
         self.assertEqual(merge.full({'a': 1, 'b': 2, 'c': 3}, {'c': 3, 'd': 4}), set(['a', 'b', 'c', 'd']))
 
-    def outermost(self):
-        self.assertEqual(merge.full({'a': 1, 'b': 2, 'c': 3}, {'c': 3, 'd': 4}), set(['a', 'b', 'd']))
+    def test_outermost(self):
+        self.assertEqual(merge.outermost({'a': 1, 'b': 2, 'c': 3}, {'c': 3, 'd': 4}), set(['a', 'b', 'd']))
 
-    def left(self):
-        self.assertEqual(merge.full({'a': 1, 'b': 2, 'c': 3}, {'c': 3, 'd': 4}), set(['a', 'b', 'c']))
+    def test_left(self):
+        self.assertEqual(merge.left({'a': 1, 'b': 2, 'c': 3}, {'c': 3, 'd': 4}), set(['a', 'b', 'c']))
 
-    def leftmost(self):
-        self.assertEqual(merge.full({'a': 1, 'b': 2, 'c': 3}, {'c': 3, 'd': 4}), set(['a', 'b', 'c']))
+    def test_leftmost(self):
+        self.assertEqual(merge.leftmost({'a': 1, 'b': 2, 'c': 3}, {'c': 3, 'd': 4}), set(['a', 'b']))
 
-    def right(self):
-        self.assertEqual(merge.full({'a': 1, 'b': 2, 'c': 3}, {'c': 3, 'd': 4}), set(['c', 'd']))
+    def test_right(self):
+        self.assertEqual(merge.right({'a': 1, 'b': 2, 'c': 3}, {'c': 3, 'd': 4}), set(['c', 'd']))
 
-    def rightmost(self):
-        self.assertEqual(merge.full({'a': 1, 'b': 2, 'c': 3}, {'c': 3, 'd': 4}), set(['c', 'd']))
+    def test_rightmost(self):
+        self.assertEqual(merge.rightmost({'a': 1, 'b': 2, 'c': 3}, {'c': 3, 'd': 4}), set(['d']))
 
 
 class TestMerge(unittest.TestCase):
@@ -115,7 +115,7 @@ class TestMerge(unittest.TestCase):
         self.assertEqual(merge.Merge(merge.right, merge.override)(left, right),
                          {'b': 222, 'c': 333})
 
-    def tets_rightmost(self):
+    def test_rightmost(self):
         """Merge for keys exclusive to right."""
         left = {'a': 1, 'b': 2}
         right = {'b': 222, 'c': 333}

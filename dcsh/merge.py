@@ -75,19 +75,19 @@ def outermost(left, right):
 
 def left(left, right):
     """Returns keys from right to left for all keys in left."""
-    return left.keys()
+    return set(left.keys())
 
 
 def leftmost(left, right):
     """Returns keys from right to left for keys that exist only in left."""
-    return left.keys() - right.keys()
+    return set(left.keys()) - set(right.keys())
 
 
 def right(left, right):
     """Returns keys from right to left for all keys in right."""
-    return right.keys()
+    return set(right.keys())
 
 
 def rightmost(left, right):
     """Returns keys from right to left for keys that exist only in right."""
-    return right.keys() - left.keys()
+    return set(right.keys()) - set(left.keys())

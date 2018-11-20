@@ -15,23 +15,27 @@ x-walled-garden-args: &walled-garden-args
 x-dcsh:
   tasks:
     sh:
-      help: 'Runs shell on python-dev service'
+      help: 'runs shell on python-dev service'
       service: python-dev
       args: sh
     python:
-      help: 'Runs python interpreter'
+      help: 'runs python interpreter'
       service: python-dev
       args: python 
     pydoc:
-      help: 'Help for python'
+      help: 'help for python'
       service: python-dev
       args: python -m pydoc
     test:
-      help: 'Runs unit tests'
+      help: 'runs unit tests through coverage'
       service: python-dev
-      args: python -m unittest discover -s ./tests
+      args: coverage run setup.py test 
+    coverage:
+      help: 'displays coverage report'
+      service: python-dev
+      args: coverage report -m
     lint:
-      help: 'Lints the project'
+      help: 'lints the project'
       service: python-dev
       args: flake8 dcsh/*.py tests/*.py
 
