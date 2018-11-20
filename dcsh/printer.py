@@ -20,7 +20,7 @@ class StylePrinter(object):
     """Styled printer for generating ANSI decorated text."""
 
     def __init__(self, stream=None, stylesheet=None, style_defaults=None):
-        """Constructs a new stylesheet capable printer around a stream and stylesheet.
+        """Constructs an ansi-capable printer around a stream and stylesheet.
 
         The optional stream argument defaults to stdout if none is applied.
 
@@ -29,12 +29,15 @@ class StylePrinter(object):
         ansicolor `color` function as kwargs.  Please see the ansicolor
         module for more information.
 
-        All methods return self, such that chained calls are possible.
+        The optional style_defaults argument specifies the baseline for all
+        styles in use by the printer.
+
+        All public methods return self, such that chained calls are possible.
 
         This class provides a __getattr__ override that behaves like a proxy for
-        write(stylename, ...).  This has a side-effect of allowing almost anything as
+        write(style_name, ...).  This has a side-effect of allowing almost anything as
         a valid method name. As a result, invalid styles will still proxy to write()
-        with no styling applied.
+        with no style applied.
         """
 
         self._start_newline = True
@@ -67,7 +70,7 @@ class StylePrinter(object):
         # emit the formatted text with padding and before/after style
         formatted_text = text.format(*args, **kwargs) if args or kwargs else text
         text = ('\n' * style['padding-top']) + style['before'] + formatted_text + \
-                style['after'] + ('\n' * style['padding-bottom'])
+            style['after'] + ('\n' * style['padding-bottom'])
 
         # configure ansi formatting
         ansicolor = {}
@@ -92,9 +95,9 @@ class StylePrinter(object):
             self._start_newline = text.endswith('\n')
         return self
 
-    def writeln(self, style, text, *args, **kwargs):
+    def writeln(self, style_name, text, *args, **kwargs):
         """Identical to write(), except a newline is written afterwards."""
-        self.write(style, text, *args, **kwargs)
+        self.write(style_name, text, *args, **kwargs)
         self.newline()
         return self
 

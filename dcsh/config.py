@@ -6,7 +6,6 @@ import argbuilder
 import shlex
 from colors import color as ansicolor
 from .compose import get_docker_compose_commands
-from .settings import default_stylesheet
 from .settings import default_settings
 from .settings import merge_settings
 from .settings import run_defaults
@@ -26,7 +25,7 @@ def load_yaml(file_path):
     return {}
 
 
-def load_settings(sudo, debug, no_color):
+def load_settings(sudo, debug, no_color, **kwargs):
     """Loads settings, merging all available configration sources."""
 
     data = merge_settings(default_settings, load_yaml('/etc/dcsh.yml'))

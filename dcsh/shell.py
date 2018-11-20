@@ -81,9 +81,3 @@ class DcShell(cmd.Cmd):
             except ShellExit:
                 printer.text('Exiting DCSH').nl()
                 break
-
-
-def do_shell():
-    """Runs a shell with the provided printer and seetings."""
-    DcShell().cmdloop()
-    return 0
