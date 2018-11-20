@@ -14,6 +14,10 @@ x-walled-garden-args: &walled-garden-args
 # DCSH configuration.
 x-dcsh:
   tasks:
+    sh:
+      help: 'Runs shell on python-dev service'
+      service: python-dev
+      args: sh
     python:
       help: 'Runs python interpreter'
       service: python-dev

@@ -2,7 +2,7 @@
 
 import sys
 from colors import color
-
+from colors import STYLES
 
 default_style = {
     'display': 'inline',
@@ -13,6 +13,15 @@ default_style = {
     'bold': False,
     'italic': False,
     'underline': False,
+    'color': None,
+    'background': None,
+    'faint': False,
+    'blink': False,
+    'blink2': False,
+    'negative': False,
+    'concealed': False,
+    'crossed': False,
+    'none': False,
 }
 
 
@@ -41,10 +50,10 @@ class StylePrinter(object):
         """
 
         self._start_newline = True
+        self._style_defaults = style_defaults if style_defaults is not None else default_style
         self.ansimode = True
-        self._style_defaults = style_defaults or default_style
-        self.stream = stream if stream else sys.stdout
-        self.stylesheet = stylesheet or {}
+        self.stream = stream if stream is not None else sys.stdout
+        self.stylesheet = stylesheet if stylesheet is not None else {}
 
     def _get_style(self, style_name):
         """Gets the style for name, populated with defaults."""
@@ -72,18 +81,10 @@ class StylePrinter(object):
         text = ('\n' * style['padding-top']) + style['before'] + formatted_text + \
             style['after'] + ('\n' * style['padding-bottom'])
 
-        # configure ansi formatting
-        ansicolor = {}
+        # emit to stream with or without ansi formatting
         if self.ansimode:
-            ansi_style = '+'.join([k for k in ['bold', 'underline', 'italic'] if style[k]])
-            if ansi_style:
-                ansicolor['style'] = ansi_style
-            if 'color' in style:
-                ansicolor['fg'] = style['color']
-
-        # emit to stream
-        if ansicolor:
-            self.stream.write(color(text, **ansicolor))
+            self.stream.write(color(text, fg=style['color'], bg=style['background'],
+                                    style='+'.join([k for k in STYLES if style[k]])))
         else:
             self.stream.write(text)
 
