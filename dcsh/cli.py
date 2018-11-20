@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import sys
 import argparse
 from .config import load_settings
@@ -19,9 +20,13 @@ def main():
     parser.add_argument('-d', '--debug', default=False, action='store_true', help='enable debug output')
     parser.add_argument('-c', '--command', default=None, help='executes a command and exits')
 
-    # parse arguments, load+validate settings, and run command
+    # parse args and clean up flags
+    args = parser.parse_args()
+    if os.fstat(0) != os.fstat(1):
+        args.no_color = True  # turn off ansi color on redirect
+
+    # load+validate settings, and run command
     try:
-        args = parser.parse_args()
         load_settings(**vars(args))
         sh = DcShell()
         if args.command:

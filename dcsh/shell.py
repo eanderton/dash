@@ -1,6 +1,9 @@
 """Interactive shell implementation"""
 
+import os
 import cmd
+import stat
+import sys
 import functools
 import shlex
 from .show import do_help
@@ -17,8 +20,14 @@ class ShellExit(Exception):
 
 class DcShell(cmd.Cmd):
     def __init__(self):
-        self.prompt = settings['prompt'] + ' '
-        self.intro = settings['intro']
+        # do not display any prompts on redirect/pipe mode
+        mode = os.fstat(sys.stdin.fileno()).st_mode
+        if stat.S_ISFIFO(mode) or stat.S_ISREG(mode):
+            self.intro = ''
+            self.prompt = ''
+        else:
+            self.prompt = settings['prompt'] + ' '
+            self.intro = settings['intro']
 
         for name, help_text in settings['dc_commands'].items():
             fn = functools.partial(self._run_command, name)
@@ -69,15 +78,21 @@ class DcShell(cmd.Cmd):
         """Builds all services or specified services."""
         run_compose('build', *shlex.split(cmdargs))
 
+    def do_EOF(self, cmdargs):
+        """Undocumented command shim to allow cmd.Cmd to function on a pipe."""
+        return True
+
     def cmdloop(self, intro=None):
         """Cmd override that handles CTRL+C gracefully."""
-        printer.writeln('intro', intro or self.intro)
+        intro_text = intro or self.intro
+        if intro_text:
+            printer.intro(intro_text)
         while True:
             try:
                 cmd.Cmd.cmdloop(self, intro='')  # start loop but suppress intro
                 break
             except KeyboardInterrupt:
-                printer.text('KeyboardInterrupt').nl()
+                printer.text('KeyboardInterrupt').newline()
             except ShellExit:
-                printer.text('Exiting DCSH').nl()
+                printer.text('Exiting DCSH').newline()
                 break
