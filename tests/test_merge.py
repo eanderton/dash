@@ -120,4 +120,4 @@ class TestMerge(unittest.TestCase):
         left = {'a': 1, 'b': 2}
         right = {'b': 222, 'c': 333}
         self.assertEqual(merge.Merge(merge.rightmost, merge.override)(left, right),
-                         {'b': 222, 'c': 333})
+                         {'c': 333})
