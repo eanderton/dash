@@ -1,6 +1,7 @@
 """Ansi-enhanced output printer library."""
 
 import sys
+import StringIO
 from colors import color
 from colors import STYLES
 
@@ -41,7 +42,11 @@ class StylePrinterFn(object):
         """Returns a new printer based on the wrapped printer and style name.
 
         The new printer uses the same settings as the wrapped printer, but the default style
-        is set to the style that corresponds to the wrapped style name."""
+        is set to the style that corresponds to the wrapped style name.
+
+        NOTE: this implementation creates the bound context late, so as to capture the
+        stylesheet's state at context creation time.
+        """
 
         p = StylePrinter(self.ctx.stream, self.ctx.stylesheet, self.ctx._get_style(self.style_name))
         p._start_newline = self.ctx._start_newline
@@ -145,3 +150,20 @@ class StylePrinter(object):
     def __getattr__(self, style_name):
         """Returns write wrapper for the style indicated by the attribute name."""
         return StylePrinterFn(self, style_name)
+
+
+class StringPrinter(StylePrinter):
+    """Convienence class for StylePrinter that wraps a StringIO buffer.
+
+    The 'buffer' attribute contains the wrapped StringIO buffer.
+    """
+
+    def __init__(self, stylesheet=None, style_defaults=None):
+        """Creates the buffer wrapped StylePrinter."""
+        self.buffer = StringIO.StringIO()
+        StylePrinter.__init__(self, stream=self.buffer, stylesheet=stylesheet,
+                              style_defaults=style_defaults)
+
+    def getvalue(self):
+        """Proxy method for .buffer.getvalue()"""
+        return self.buffer.getvalue()

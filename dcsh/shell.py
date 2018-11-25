@@ -6,9 +6,10 @@ import stat
 import sys
 import functools
 import shlex
+from .printer import StringPrinter
 from .show import do_help
 from .show import do_show
-from .settings import settings
+from .settings import settings as global_settings
 from .settings import printer
 from .compose import run_compose
 
@@ -19,21 +20,32 @@ class ShellExit(Exception):
 
 
 class DcShell(cmd.Cmd):
-    def __init__(self):
+    def __init__(self, settings=None):
+        settings = settings or global_settings
+
         # do not display any prompts on redirect/pipe mode
         mode = os.fstat(sys.stdin.fileno()).st_mode
         if stat.S_ISFIFO(mode) or stat.S_ISREG(mode):
             self.intro = ''
             self.prompt = ''
         else:
-            self.prompt = settings['prompt'] + ' '
             self.intro = settings['intro']
 
+            # prompt text varies based on debug mode
+            if settings['debug']:
+                prompt_text = settings['debug_prompt']
+                style = settings['debug_prompt_style']
+            else:
+                prompt_text = settings['prompt']
+                style = settings['prompt_style']
+            self.prompt = StringPrinter(stylesheet=settings['stylesheet']
+                                        ).write(style, prompt_text).getvalue() + ' '
+
+        # create cmd.Cmd compatible proxy methods for commands
         for name, help_text in settings['dc_commands'].items():
             fn = functools.partial(self._run_command, name)
             setattr(self, 'do_' + name, fn)
             setattr(fn, '__doc__', help_text)
-
         for name, task in settings['tasks'].items():
             fn = functools.partial(self._run_task, task)
             setattr(self, 'do_' + name, fn)

@@ -18,7 +18,7 @@ def main():
     parser.add_argument('--no-color', default=False, action='store_true', help='turns off ANSI colors')
     parser.add_argument('-s', '--sudo', default=False, action='store_true', help='run docker-compose using sudo')
     parser.add_argument('-d', '--debug', default=False, action='store_true', help='enable debug output')
-    parser.add_argument('-c', '--command', default=None, help='executes a command and exits')
+    parser.add_argument('-c', '--command', default=None, action='append', help='executes a command and exits')
 
     # parse args and clean up flags
     args = parser.parse_args()
@@ -30,7 +30,9 @@ def main():
         load_settings(**vars(args))
         sh = DcShell()
         if args.command:
-            return sh.onecmd(args.command)
+            for cmd_text in args.command:
+                result = sh.onecmd(cmd_text)
+            return result
         else:
             return sh.cmdloop()
     except Exception as e:

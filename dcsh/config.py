@@ -4,7 +4,6 @@ import os
 import yaml
 import argbuilder
 import shlex
-from colors import color as ansicolor
 from .compose import get_docker_compose_commands
 from .settings import default_settings
 from .settings import merge_settings
@@ -62,19 +61,12 @@ def load_settings(sudo, debug, no_color, **kwargs):
             taskdef['args']
         settings['tasks'][name] = taskdef
 
-    # default prompt depends on debug and no_color settings
-    if not settings['prompt']:
-        style = {}
-        if not no_color:
-            style['fg'] = 'red' if settings['debug'] else 'yellow'
-        prompt = '(dcsh debug mode)$' if settings['debug'] else '(dcsh)$'
-        settings['prompt'] = ansicolor(prompt, **style)
-
     # supplement config with docker command set
     commands = get_docker_compose_commands()
     if 'help' in commands:
         del commands['help']  # 'help' is already provided elsewhere
     settings['dc_commands'] = commands
 
-    # configure printer and run command
+    # configure printer
     printer.ansimode = not no_color
+    printer.stylesheet = settings['stylesheet']

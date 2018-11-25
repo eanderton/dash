@@ -15,6 +15,8 @@ default_stylesheet = {
     'off': {'color': 'red'},
     'error': {'color': 'red'},
     'debug': {'color': 'blue', 'italic': True},
+    'prompt': {'color': 'yellow'},
+    'debug_prompt': {'color': 'red'},
 }
 
 
@@ -23,9 +25,13 @@ default_settings = {
     'environment': {},
     'debug': False,
     'sudo': False,
-    'prompt': None,
+    'prompt': '(dcsh)$',
+    'debug_prompt': '(dcsh debug mode)$',
+    'prompt_style': 'prompt',
+    'debug_prompt_style': 'debug_prompt',
     'intro': 'DCSH started. Type "help" for assitance.',
     'dc_path': 'docker-compose',
+    'stylesheet': default_stylesheet,
 }
 
 
@@ -35,8 +41,12 @@ merge_settings = merge.Merge(merge.left, merge.discard, {
     'debug': merge.override,
     'sudo': merge.override,
     'prompt': merge.override,
+    'debug_prompt': merge.override,
+    'prompt_style': merge.override,
+    'debug_prompt_style': merge.override,
     'intro': merge.override,
     'dc_path': merge.override,
+    'stylesheet': merge.override,
 })
 
 run_defaults = {
@@ -94,4 +104,4 @@ settings = dict(default_settings)
 
 
 # singleton state for output printer
-printer = StylePrinter(stylesheet=default_stylesheet)
+printer = StylePrinter()
