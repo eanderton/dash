@@ -82,20 +82,20 @@ exec_defaults = {
 merge_task = merge.Merge(merge.left, merge.override)
 
 task_arg_map = {
-    'detach': argbuilder.boolean('-d'),
-    'name': argbuilder.single('--name'),
-    'nodeps': argbuilder.boolean('--no-deps'),
-    'remove': argbuilder.boolean('--rm'),
-    'disable-tty': argbuilder.boolean('-T'),
-    'entrypoint': argbuilder.single('--entrypoint'),
-    'privileged': argbuilder.boolean('--privileged'),
-    'user': argbuilder.single('--user'),
-    'index': argbuilder.single('--index'),
-    'service-ports': argbuilder.boolean('--service-ports'),
-    'labels': argbuilder.multi('--label', '{k}={v}'),
-    'volume': argbuilder.multi('--volume', '{v}'),
-    'publish': argbuilder.multi('--publish', '{v}'),
-    'environment': argbuilder.multi('-e', '{k}={v}'),
+    'detach': argbuilder.arg('-d'),
+    'name': argbuilder.arg('--name {v}'),
+    'nodeps': argbuilder.arg('--no-deps'),
+    'remove': argbuilder.arg('--rm'),
+    'disable-tty': argbuilder.arg('-T'),
+    'entrypoint': argbuilder.arg('--entrypoint {v}'),
+    'privileged': argbuilder.arg('--privileged'),
+    'user': argbuilder.arg('--user {v}'),
+    'index': argbuilder.arg('--index {v}'),
+    'service-ports': argbuilder.arg('--service-ports'),
+    'labels': argbuilder.multi_arg('--label', '{k}={v}'),
+    'volume': argbuilder.multi_arg('--volume', '{v}'),
+    'publish': argbuilder.multi_arg('--publish', '{v}'),
+    'environment': argbuilder.multi_arg('-e', '{k}={v}'),
 }
 
 

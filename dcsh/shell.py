@@ -6,7 +6,7 @@ import stat
 import sys
 import functools
 import shlex
-from .printer import StringPrinter
+from .printer import printer_fmt
 from .show import do_help
 from .show import do_show
 from .settings import settings as global_settings
@@ -20,8 +20,9 @@ class ShellExit(Exception):
 
 
 class DcShell(cmd.Cmd):
-    def __init__(self, settings=None):
+    def __init__(self, settings=None, stdin=None):
         settings = settings or global_settings
+        self.debug = settings['debug']
 
         # do not display any prompts on redirect/pipe mode
         mode = os.fstat(sys.stdin.fileno()).st_mode
@@ -32,14 +33,14 @@ class DcShell(cmd.Cmd):
             self.intro = settings['intro']
 
             # prompt text varies based on debug mode
-            if settings['debug']:
+            if self.debug:
                 prompt_text = settings['debug_prompt']
                 style = settings['debug_prompt_style']
             else:
                 prompt_text = settings['prompt']
                 style = settings['prompt_style']
-            self.prompt = StringPrinter(stylesheet=settings['stylesheet']
-                                        ).write(style, prompt_text).getvalue() + ' '
+            ss = settings['stylesheet']
+            self.prompt = printer_fmt(ss, style, prompt_text) + ' '
 
         # create cmd.Cmd compatible proxy methods for commands
         for name, help_text in settings['dc_commands'].items():
@@ -52,7 +53,7 @@ class DcShell(cmd.Cmd):
             if task['help']:
                 setattr(fn, '__doc__', task['help'])
 
-        cmd.Cmd.__init__(self)
+        cmd.Cmd.__init__(self, stdin=stdin)  # , stdout=printer.stream)
 
     def _run_command(self, name, cmdargs):
         """Runs a specified docker-compose command with optional args."""
@@ -72,6 +73,8 @@ class DcShell(cmd.Cmd):
 
     def do_exit(self, cmdargs):
         """Ends the shell session."""
+        if not self.debug:
+            printer.text('Exiting DCSH').newline()
         raise ShellExit()
 
     def do_dc(self, cmdargs):
@@ -102,9 +105,7 @@ class DcShell(cmd.Cmd):
         while True:
             try:
                 cmd.Cmd.cmdloop(self, intro='')  # start loop but suppress intro
-                break
             except KeyboardInterrupt:
                 printer.text('KeyboardInterrupt').newline()
             except ShellExit:
-                printer.text('Exiting DCSH').newline()
                 break

@@ -167,3 +167,8 @@ class StringPrinter(StylePrinter):
     def getvalue(self):
         """Proxy method for .buffer.getvalue()"""
         return self.buffer.getvalue()
+
+
+def printer_fmt(stylesheet, style, text, *args, **kwargs):
+    """Proxy for `StringPrinter().write`."""
+    return StringPrinter(stylesheet).write(style, text, *args, **kwargs).getvalue()

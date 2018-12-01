@@ -1,18 +1,8 @@
 """Utility for building CLI argument sets from dicionary data."""
 
 
-def boolean(*fmt):
-    """Returns formatted literal argument if the data value is true."""
-
-    def fn(v):
-        if v:
-            return [f.format(v=v) for f in fmt]
-        return []
-    return fn
-
-
-def single(*fmt):
-    """Passes the data value through, following literal values."""
+def arg(*fmt):
+    """Returns all provided formats for value, if value is truthy."""
 
     def fn(value):
         if value:
@@ -21,15 +11,47 @@ def single(*fmt):
     return fn
 
 
-def multi(*fmt):
-    """Passes multiple values through formats."""
+def dict_arg(*fmt):
+    """Returns all provided formats for value.
+
+    Value must be dict, or a type that supports .items().
+    """
 
     def fn(value):
-        if isinstance(value, dict):
-            return [f.format(v=v, k=v) for f in fmt for k, v in value.items()]
-        elif value:
-            return [f.format(k=v) for f in fmt for v in value]
-        return []
+        return [f.format(v=v, k=k) for k, v in value.items() for f in fmt]
+    return fn
+
+
+def iter_arg(*fmt):
+    """Returns all provided formats for value.
+
+    Value must be an iterable type.
+    """
+
+    def fn(value):
+        return [f.format(v=v) for v in value for f in fmt]
+    return fn
+
+
+def multi_arg(*fmt):
+    """Returns all provided formats for value, based on value's type.
+
+    Value is mapped to a formatter based on the following rules:
+    - dict-like object: dict_arg
+    - iterables (non-string): iter_arg
+    - strings and all other types: arg
+    """
+
+    def fn(value):
+        if isinstance(value, str):
+            return arg(*fmt)(value)
+        try:
+            return dict_arg(*fmt)(value)
+        except AttributeError:
+            try:
+                return iter_arg(*fmt)(value)
+            except TypeError:
+                return arg(*fmt)(value)
     return fn
 
 
@@ -45,7 +67,7 @@ def build(argmap, data):
     """
 
     args = []
-    for name, fn in argmap.items():
+    for name, fn in argmap.iteritems():
         if name in data:
             args += fn(data[name])
     return args
